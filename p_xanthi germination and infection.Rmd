@@ -1,0 +1,56 @@
+---
+title: "The influence of temperature and vapour pressure deficit on conidia germination and germ tubes production in an Australian Podosphaera xanthii isolate."
+description: |
+  Data analysis for paper
+author:
+  - name: Paul Melloy 
+    url: https://example.com/norajones
+    affiliation: The University of Queensland
+date: "`r Sys.Date()`"
+output: distill::distill_article
+---
+
+```{r libraries}
+library(mgcv)
+library(lme4)
+library(readxl)
+library(data.table)
+```
+
+```{r import_data}
+germ_dat <- read_xlsx("data/Chapter 5 (germination vs temperature vs time incubation at low VPD).xlsx",
+                      range = "A1:N32")
+```
+
+```{r}
+# Remove unnecessary columns and rows
+germ_dat <- data.table(germ_dat)[-c(1,2,7:10,15:18,23:27),-c(4,6,7,9,11,13)]
+
+# rename leaf number column
+setnames(germ_dat,
+         old = c("Temperature" ,"...2"),
+         new = c("i_period","leaf"))
+
+# fill incubation period
+germ_dat[13:16,i_period := "48h"]
+# remove "h" and make column numeric
+germ_dat[,i_period := as.numeric(gsub("h","",germ_dat$i_period))]
+
+# fill in na's with previous non NA value
+setnafill(germ_dat,
+          type = "locf",
+          cols = "i_period")
+
+# reshape data to long format
+germ_dat <- 
+   melt(germ_dat,
+     id.vars = c("i_period","leaf"),
+     measure.vars = c("17oC", "19oC", "22oC", "25oC", "28oC", "31oC"),
+     variable.name = "Tm",
+     value.name = "germ_conidia")
+
+# remove "oC" from temperature and make it numeric
+germ_dat[, Tm := as.numeric(gsub("oC","",Tm))]
+
+```
+
