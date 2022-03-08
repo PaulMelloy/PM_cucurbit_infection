@@ -148,7 +148,7 @@ branch_vpd[, germ_tubes := as.numeric(gsub("b","",germ_tubes))]
 
 # Change column order
 setcolorder(branch_vpd,
-            neworder = c("trial_rep", "vpd", "Tm", "RH","rep","germ_tubes","n"))
+            neworder = c("vpd", "Tm", "RH","rep","germ_tubes","n"))
 
 # save data into cache
 fwrite(x = branch_vpd,
@@ -187,9 +187,14 @@ setcolorder(germ_vpd_tm,
             neworder = c("Tm", "vpd", "branches","conidia"))
 
 # set correct classes and add non-germinated
-germ_vpd_tm[, c("vpd", "branches", "conidia") := list(as.numeric(vpd),
-                                                      as.numeric(branches),
-                                                      as.numeric(conidia))]
+germ_vpd_tm[, c("vpd", 
+                "branches", 
+                "conidia", 
+                "rep") := 
+              list(as.numeric(vpd),
+                   as.numeric(branches),
+                   as.numeric(conidia),
+                   rep(1:4,.N/4))]
 
 # obtain vector of non-germinated???????????
 
@@ -201,6 +206,42 @@ fwrite(x = germ_vpd_tm,
 
 
 
+```{r}
+# read in data from sas file
+dat <- readLines("data/vpd germtube.sas")[3:236]
+# cut out non-data lines
+dat <- dat[-c(2,55:58,111:114,167:170,223:226)]
+#write it to csv
+write(dat, "cache/vpd_branches.csv")
+
+# read in data using fread
+branch_vpd2 <- fread("cache/vpd_branches.csv")
+
+# Add relative humidity and temperature data
+branch_vpd2[ , c("RH","Tm") := list(rep(c(99,95,85,75,50,33),each = 36),
+                                    rep(c(22,25,28),each = 12, times = 6))]
+
+# recalculate vpd and convert branches to numeric
+branch_vpd2[, c("vpd",
+                "bran") :=
+              list(round(epiphytoolR::calc_vpd(RH = RH,
+                                               Tm = Tm),
+                         3),
+                   as.numeric(gsub("b", "", bran)))]
+
+# rearrange columns
+setcolorder(branch_vpd2,
+            neworder = c("Obs", "RH", "Tm", "vpd", "bran", "rep", "numb")
+            )
+
+setnames(branch_vpd2,
+         old = c("bran", "numb"),
+         new = c("branches","condia"))
+
+fwrite(branch_vpd2,
+       file = "cache/branching_under_vpd&Tm.csv")
+
+```
 
 
 
