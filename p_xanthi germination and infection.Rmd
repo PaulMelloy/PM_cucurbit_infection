@@ -236,7 +236,9 @@ setcolorder(branch_vpd2,
 
 setnames(branch_vpd2,
          old = c("bran", "numb"),
-         new = c("branches","condia"))
+         new = c("branches","conidia"))
+
+branch_vpd2[, non_germ := 100 - sum(conidia), by = .(RH, Tm, vpd, rep)]
 
 fwrite(branch_vpd2,
        file = "cache/branching_under_vpd&Tm.csv")
