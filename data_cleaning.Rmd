@@ -11,8 +11,6 @@ output: distill::distill_article
 ---
 
 ```{r libraries,message = FALSE}
-library(mgcv)
-library(lme4)
 library(readxl)
 library(dplyr)
 library(data.table)
