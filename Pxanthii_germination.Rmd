@@ -1,0 +1,33 @@
+---
+title: "Temperature and VPD effects on *P. xanthii* germination"
+description: |
+  A new article created using the Distill format.
+author:
+  - name: Nora Jones 
+    url: https://example.com/norajones
+    affiliation: Spacely Sprockets
+    affiliation_url: https://example.com/spacelysprokets
+date: "`r Sys.Date()`"
+output: distill::distill_article
+---
+
+Load R libraries required for analysis
+```{r load_libraries}
+library(data.table)
+library(mgcv)
+library(lme4)
+library(ggplot2)
+```
+
+Import the clean data
+```{r import_data}
+g_tm <- fread("cache/germination_temperature.csv")
+g_vpd <- fread("cache/germination_response_to_vpd.csv")
+```
+
+
+
+
+
+
+
