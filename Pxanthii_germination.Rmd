@@ -14,7 +14,7 @@ output: distill::distill_article
 Load R libraries required for analysis
 ```{r load_libraries}
 library(data.table)
-library(mgcv)
+library(mgvc)
 library(lme4)
 library(ggplot2)
 ```
@@ -49,25 +49,29 @@ g_tm |>
 ```
 
 This plot shows that the optimum temperature for rapid *P. xanthii* germination 
-is 28C. 
-Also that if we asume at time zero there was no germinated conidia, 50% of conidia
+is around 28C. 
+Also that if we assume at time zero there was no germinated conidia, 50% of conidia
 germinated within the first 12 hours. 
-In all termperature treatments, between 12 and 36 hours after infection conidial germination increased at 
+In all temperature treatments, between 12 and 36 hours after infection conidial germination increased at 
 a linear rate. 
 After 36 hours the rate of conidia germinating declined to almost zero.
 Curves were fit using a generalised additive model with a smooth spline containing 4 knots.  
 
 Lets further evaluate this fit.
 However instead of fitting a temperature as a separate random effect, as depicted 
-in the above plot, we will define temperature as a separate predictor that may
-or maynot interact with infection period.  
+in the above plot, we will define temperature as a separate continuous predictor 
+that may or may not interact with infection period.  
 
+Germination is a binomial response so we need to provide the number of germinated 
+to the number of non-germinated.
 In the first model we will fit a smooth to each predictor and specify that each 
 predictor influences germination independently of the other.
-I have used only 3 and 5 basis spline 'knots' for infection period and temperature
-respecivley
+I have used only 2 and 4 basis spline 'knots' for infection period and temperature
+respectively.
 ```{r germ_time_gam}
-m1 <- gam(germ_conidia ~ s(i_period, k=3) + s(Tm, k =4), data = g_tm)
+m1 <- gam(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k=3) + s(Tm, k =4), 
+          data = g_tm,
+          family = "binomial")
 summary(m1)
 plot(m1)
 vis.gam(m1,
@@ -79,9 +83,11 @@ vis.gam(m1,
 
 Model two we will investigate whether there is an interaction between temperature 
 and infection period.
-I have added the number of basis spines together for 7 knots
+
 ```{r germ_time_gam}
-m2 <- gam(germ_conidia ~ te(i_period, Tm, k = 3), data = g_tm)
+m2 <- gam(cbind(germ_conidia, non_germ_conidia) ~ te(i_period, Tm, k = 4),
+          data = g_tm,
+          family = "binomial")
 summary(m2)
 plot(m2)
 vis.gam(m2, 
@@ -90,8 +96,8 @@ vis.gam(m2,
         n.grid = max(g_tm$Tm) - min(g_tm$Tm) # grid cells
         )
 ```
-This model shows lower R squared and deviance explained values, with a much
-higher GCV value indicating that model one (`m1`) is the better model.  
+This model shows slightly higher R squared and 'explained deviance' values, with 
+a lower UBRE  value indicating that model two (`m2`) is the better model.  
 
 Lets compare the models against each other.
 ```{r}
@@ -100,11 +106,17 @@ anova(m1,m2, test = "Chisq")
 This confirms that model two is the better model and explains more of the deviance.  
 
 Yet this model does not tend to reflect the raw data. 
-The first plot indicated that 28C showed the highest colonial germination. 
-This might be due to the default type of basis splines, thin plate splines. 
-Lets try p splines to see if we can improve the fit
+The plots of the fitted model indicate that 28C showed the highest colonial germination. 
+This might be due to the default type of basis splines, and number of knots. 
+We have exhausted our options for improving the interaction, so let us investigate
+improving the additive model by fitting a better spline to the temperature predictor.
+P-splines use a penalised least-square method to fit the model and are better in
+non-normal distributions.
+Lets try p splines to see if we can improve the fit.
 ```{r}
-m3 <- gam(germ_conidia ~ s(i_period, k=3) + s(Tm, k =4, bs = "ps"), data = g_tm)
+m3 <- gam(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k=3) + s(Tm, k =4, bs = "ps"),
+          data = g_tm,
+          family = "binomial")
 summary(m3)
 plot(m3)
 vis.gam(m3,
@@ -113,19 +125,25 @@ vis.gam(m3,
         n.grid = max(g_tm$Tm) - min(g_tm$Tm) # grid cells
         )
 ```
-The P-splines have improved the predictive ability of the model with a lower GCV, 
+The P-splines have improved the predictive ability of the model with a lower UBRE, 
 improved the R squared value and explained deviance.
-We can also see that the curve has been shifted slightly up towards 28C.
+We can also see that the curve has been shifted slightly up towards 28C.  
 
 
-Lets compare the models one and three to against each other.
+Lets compare the models two and three to against each other.
 ```{r}
-anova(m1,m3, test = "Chisq")
+anova(m2,m3, test = "Chisq")
 ```
-Model three is a significantly better fit. 
-However lets see if cyclic versions of the p-splines `"cp"` improve this fit further
+The models show no significant difference therefore we should use the simpler model,
+model three (`m3`). 
+Model three also shows a better fit to the data.  
+  
+  
+Next lets see if cyclic versions of the p-splines `"cp"` improve this fit further.
 ```{r}
-m4 <- gam(germ_conidia ~ s(i_period, k=3) + s(Tm, k =4, bs = "cp"), data = g_tm)
+m4 <- gam(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k=3) + s(Tm, k =4, bs = "cp"),
+          data = g_tm,
+          family = "binomial")
 summary(m4)
 plot(m4)
 vis.gam(m4,
@@ -134,20 +152,27 @@ vis.gam(m4,
         n.grid = max(g_tm$Tm) - min(g_tm$Tm) # grid cells
         )
 ```
-The cyclic P-splines seem to have improved the predictive ability of the model with a lower GCV, 
-improved the R squared value and explained more deviance.
+The cyclic P-splines seem to have improved the predictive ability of the model 
+with a very low UBRE, also improving the R squared value and explaining more deviance.
 We can also see that the curve has been shifted further towards 28C, however the
-model might be overfit, especially between the temperature ranges 20 - 24C.
+the willingness of the model implies it might be overfit, especially between the 
+temperature ranges 20 - 24C.  
 
-
-Lets compare the models one and three to against each other.
+  
+Lets compare the models three and four to against each other.
 ```{r}
 anova(m3,m4, test = "Chisq")
 ```
+The models show no significant difference, therefore we should keep the simpler 
+model.  
 
-Lets use the p splines again however increase the number of knots.
+
+Lets use the p splines again however increase the number of knots for temperature
+in attempt to get a better fit to the raw data.
 ```{r}
-m5 <- gam(germ_conidia ~ s(i_period, k=3) + s(Tm, k =5, bs = "ps"), data = g_tm)
+m5 <- gam(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k=3) + s(Tm, k =6, bs = "ps"),
+          data = g_tm,
+          family = "binomial")
 summary(m5)
 plot(m5)
 vis.gam(m5,
@@ -156,17 +181,25 @@ vis.gam(m5,
         n.grid = max(g_tm$Tm) - min(g_tm$Tm) # grid cells
         )
 ```
+This model has less "wiggliness", higher R-squared, explained more deviance and 
+has teh lowest UBRE score.  
+
 
 Lets compare the models one and three to against each other.
 ```{r}
 anova(m4,m5, test = "Chisq")
 ```
-Now there is no significant difference between the types of p-spline models and a
-fit that looks less affected by over fitting.
+The p-spline model with more knots explained the most deviance and provides a 
+significantly better fit.
 
 And look at the AIC values of all the models
 ```{r}
 AIC(m1,m2,m3,m4,m5)
 ```
 
+This shows that model five is the best fit, with the lowest AIC and an R squared
+of `r round(summary(m5)$r.sq, 4)`.
+Temperature and infection period are significant predictors and the model produces
+a low GVC score or `r round(m5$gvc.ubre.dev,3)`, indicating good predictive ability
+and less affected by drop one, tests.
 
