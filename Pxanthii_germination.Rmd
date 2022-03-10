@@ -26,8 +26,147 @@ g_vpd <- fread("cache/germination_response_to_vpd.csv")
 ```
 
 
+## Impact of Temperature on *P. xanthii* germination  
+Peek at the data
+```{r}
+head(g_tm)
+str(g_tm)
+```
+Let's plot the data over time
+```{r}
+g_tm |>
+   ggplot(aes(x = i_period, y = germ_conidia, colour = as.factor(Tm))) + 
+   geom_point()+
+   geom_smooth(method = "gam",formula = y ~ s(x, k = 4))+
+   scale_color_viridis_d()+
+   xlab("Time in hours")+
+   ylab("Germinated conidia (%)")+
+   labs(colour = "Temperature")+
+   theme_classic()+
+   scale_x_continuous(limits = c(12,48), breaks = c(12,18,24,30,36,42,48))+
+   scale_y_continuous(limits = c(0,100), n.breaks = 5)
+   
+```
+
+This plot shows that the optimum temperature for rapid *P. xanthii* germination 
+is 28C. 
+Also that if we asume at time zero there was no germinated conidia, 50% of conidia
+germinated within the first 12 hours. 
+In all termperature treatments, between 12 and 36 hours after infection conidial germination increased at 
+a linear rate. 
+After 36 hours the rate of conidia germinating declined to almost zero.
+Curves were fit using a generalised additive model with a smooth spline containing 4 knots.  
+
+Lets further evaluate this fit.
+However instead of fitting a temperature as a separate random effect, as depicted 
+in the above plot, we will define temperature as a separate predictor that may
+or maynot interact with infection period.  
+
+In the first model we will fit a smooth to each predictor and specify that each 
+predictor influences germination independently of the other.
+I have used only 3 and 5 basis spline 'knots' for infection period and temperature
+respecivley
+```{r germ_time_gam}
+m1 <- gam(germ_conidia ~ s(i_period, k=3) + s(Tm, k =4), data = g_tm)
+summary(m1)
+plot(m1)
+vis.gam(m1,
+        theta = -50, # horizontal rotation
+        phi = 30, # vertical rotation
+        n.grid = max(g_tm$Tm) - min(g_tm$Tm) # grid cells
+        )
+```
+
+Model two we will investigate whether there is an interaction between temperature 
+and infection period.
+I have added the number of basis spines together for 7 knots
+```{r germ_time_gam}
+m2 <- gam(germ_conidia ~ te(i_period, Tm, k = 3), data = g_tm)
+summary(m2)
+plot(m2)
+vis.gam(m2, 
+        theta = -50, # horizontal rotation
+        phi = 30, # vertical rotation
+        n.grid = max(g_tm$Tm) - min(g_tm$Tm) # grid cells
+        )
+```
+This model shows lower R squared and deviance explained values, with a much
+higher GCV value indicating that model one (`m1`) is the better model.  
+
+Lets compare the models against each other.
+```{r}
+anova(m1,m2, test = "Chisq")
+```
+This confirms that model two is the better model and explains more of the deviance.  
+
+Yet this model does not tend to reflect the raw data. 
+The first plot indicated that 28C showed the highest colonial germination. 
+This might be due to the default type of basis splines, thin plate splines. 
+Lets try p splines to see if we can improve the fit
+```{r}
+m3 <- gam(germ_conidia ~ s(i_period, k=3) + s(Tm, k =4, bs = "ps"), data = g_tm)
+summary(m3)
+plot(m3)
+vis.gam(m3,
+        theta = -50, # horizontal rotation
+        phi = 30, # vertical rotation
+        n.grid = max(g_tm$Tm) - min(g_tm$Tm) # grid cells
+        )
+```
+The P-splines have improved the predictive ability of the model with a lower GCV, 
+improved the R squared value and explained deviance.
+We can also see that the curve has been shifted slightly up towards 28C.
 
 
+Lets compare the models one and three to against each other.
+```{r}
+anova(m1,m3, test = "Chisq")
+```
+Model three is a significantly better fit. 
+However lets see if cyclic versions of the p-splines `"cp"` improve this fit further
+```{r}
+m4 <- gam(germ_conidia ~ s(i_period, k=3) + s(Tm, k =4, bs = "cp"), data = g_tm)
+summary(m4)
+plot(m4)
+vis.gam(m4,
+        theta = -50, # horizontal rotation
+        phi = 30, # vertical rotation
+        n.grid = max(g_tm$Tm) - min(g_tm$Tm) # grid cells
+        )
+```
+The cyclic P-splines seem to have improved the predictive ability of the model with a lower GCV, 
+improved the R squared value and explained more deviance.
+We can also see that the curve has been shifted further towards 28C, however the
+model might be overfit, especially between the temperature ranges 20 - 24C.
 
+
+Lets compare the models one and three to against each other.
+```{r}
+anova(m3,m4, test = "Chisq")
+```
+
+Lets use the p splines again however increase the number of knots.
+```{r}
+m5 <- gam(germ_conidia ~ s(i_period, k=3) + s(Tm, k =5, bs = "ps"), data = g_tm)
+summary(m5)
+plot(m5)
+vis.gam(m5,
+        theta = -50, # horizontal rotation
+        phi = 30, # vertical rotation
+        n.grid = max(g_tm$Tm) - min(g_tm$Tm) # grid cells
+        )
+```
+
+Lets compare the models one and three to against each other.
+```{r}
+anova(m4,m5, test = "Chisq")
+```
+Now there is no significant difference between the types of p-spline models and a
+fit that looks less affected by over fitting.
+
+And look at the AIC values of all the models
+```{r}
+AIC(m1,m2,m3,m4,m5)
+```
 
 
