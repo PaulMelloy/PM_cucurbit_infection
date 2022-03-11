@@ -14,7 +14,7 @@ output: distill::distill_article
 Load R libraries required for analysis
 ```{r load_libraries}
 library(data.table)
-library(mgvc)
+library(mgcv)
 library(lme4)
 library(ggplot2)
 ```
@@ -28,16 +28,16 @@ g_vpd <- fread("cache/germination_response_to_vpd.csv")
 
 ## Impact of Temperature on *P. xanthii* germination  
 Peek at the data
-```{r}
+```{r data_peek}
 head(g_tm)
 str(g_tm)
 ```
 Let's plot the data over time
-```{r}
+```{r plot_raw_time}
 g_tm |>
    ggplot(aes(x = i_period, y = germ_conidia, colour = as.factor(Tm))) + 
    geom_point()+
-   geom_smooth(method = "gam",formula = y ~ s(x, k = 4))+
+   geom_smooth(method = "gam",formula = y ~ s(x, k = 3))+
    scale_color_viridis_d()+
    xlab("Time in hours")+
    ylab("Germinated conidia (%)")+
@@ -47,15 +47,31 @@ g_tm |>
    scale_y_continuous(limits = c(0,100), n.breaks = 5)
    
 ```
+<br>  
+Now lets plot germination over temperature separating by infection period
+```{r plot_raw_Tm}
+g_tm |>
+   ggplot(aes(x = Tm, y = germ_conidia, colour = as.factor(i_period))) + 
+   geom_point()+
+   geom_smooth(method = "gam",formula = y ~ s(x, k = 6))+
+   scale_color_viridis_d()+
+   xlab("Temperature")+
+   ylab("Germinated conidia (%)")+
+   labs(colour = "Time (h)")+
+   theme_classic()+
+   #scale_x_continuous(limits = c(12,48), breaks = c(12,18,24,30,36,42,48))+
+   scale_y_continuous(limits = c(0,100), n.breaks = 5)
+```
+Splines fit with four knots.  
 
-This plot shows that the optimum temperature for rapid *P. xanthii* germination 
+These plot shows that the optimum temperature for rapid *P. xanthii* germination 
 is around 28C. 
-Also that if we assume at time zero there was no germinated conidia, 50% of conidia
-germinated within the first 12 hours. 
+Also, in the first plot, if we assume at time zero there was no germinated conidia, 
+50% of the conidia germinated within the first 12 hours. 
 In all temperature treatments, between 12 and 36 hours after infection conidial germination increased at 
 a linear rate. 
 After 36 hours the rate of conidia germinating declined to almost zero.
-Curves were fit using a generalised additive model with a smooth spline containing 4 knots.  
+Curves were fit using a generalised additive model with a smooth spline containing 6 knots.  
 
 Lets further evaluate this fit.
 However instead of fitting a temperature as a separate random effect, as depicted 
@@ -68,7 +84,7 @@ In the first model we will fit a smooth to each predictor and specify that each
 predictor influences germination independently of the other.
 I have used only 2 and 4 basis spline 'knots' for infection period and temperature
 respectively.
-```{r germ_time_gam}
+```{r model_1}
 m1 <- gam(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k=3) + s(Tm, k =4), 
           data = g_tm,
           family = "binomial")
@@ -84,7 +100,7 @@ vis.gam(m1,
 Model two we will investigate whether there is an interaction between temperature 
 and infection period.
 
-```{r germ_time_gam}
+```{r model_2}
 m2 <- gam(cbind(germ_conidia, non_germ_conidia) ~ te(i_period, Tm, k = 4),
           data = g_tm,
           family = "binomial")
@@ -100,7 +116,7 @@ This model shows slightly higher R squared and 'explained deviance' values, with
 a lower UBRE  value indicating that model two (`m2`) is the better model.  
 
 Lets compare the models against each other.
-```{r}
+```{r compare_m1m2}
 anova(m1,m2, test = "Chisq")
 ```
 This confirms that model two is the better model and explains more of the deviance.  
@@ -113,7 +129,7 @@ improving the additive model by fitting a better spline to the temperature predi
 P-splines use a penalised least-square method to fit the model and are better in
 non-normal distributions.
 Lets try p splines to see if we can improve the fit.
-```{r}
+```{r model_3}
 m3 <- gam(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k=3) + s(Tm, k =4, bs = "ps"),
           data = g_tm,
           family = "binomial")
@@ -131,7 +147,7 @@ We can also see that the curve has been shifted slightly up towards 28C.
 
 
 Lets compare the models two and three to against each other.
-```{r}
+```{r comp_m2m3}
 anova(m2,m3, test = "Chisq")
 ```
 The models show no significant difference therefore we should use the simpler model,
@@ -140,7 +156,7 @@ Model three also shows a better fit to the data.
   
   
 Next lets see if cyclic versions of the p-splines `"cp"` improve this fit further.
-```{r}
+```{r model_4}
 m4 <- gam(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k=3) + s(Tm, k =4, bs = "cp"),
           data = g_tm,
           family = "binomial")
@@ -160,7 +176,7 @@ temperature ranges 20 - 24C.
 
   
 Lets compare the models three and four to against each other.
-```{r}
+```{r comp_m3m4}
 anova(m3,m4, test = "Chisq")
 ```
 The models show no significant difference, therefore we should keep the simpler 
@@ -169,7 +185,7 @@ model.
 
 Lets use the p splines again however increase the number of knots for temperature
 in attempt to get a better fit to the raw data.
-```{r}
+```{r model_5}
 m5 <- gam(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k=3) + s(Tm, k =6, bs = "ps"),
           data = g_tm,
           family = "binomial")
@@ -182,18 +198,18 @@ vis.gam(m5,
         )
 ```
 This model has less "wiggliness", higher R-squared, explained more deviance and 
-has teh lowest UBRE score.  
+has the lowest UBRE score.  
 
 
 Lets compare the models one and three to against each other.
-```{r}
+```{r comp_m4m5}
 anova(m4,m5, test = "Chisq")
 ```
 The p-spline model with more knots explained the most deviance and provides a 
 significantly better fit.
 
 And look at the AIC values of all the models
-```{r}
+```{r AIC_all}
 AIC(m1,m2,m3,m4,m5)
 ```
 
