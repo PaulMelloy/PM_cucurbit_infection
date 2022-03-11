@@ -244,3 +244,91 @@ Temperature and infection period are significant predictors and the model produc
 a low UBRE score or `r round(m5$gcv.ubre,3)`, indicating good predictive ability
 and less affected by drop one, tests.
 
+
+
+<br>  
+<br>  
+
+## Impact of Temperature on *P. xanthii* germination  
+Peek at the data
+
+```{r data_peek}
+head(g_vpd)
+str(g_vpd)
+```
+<br>  
+### Visualise the raw data  
+Let's plot the data over time  
+
+```{r plot_raw_time}
+g_vpd |>
+   ggplot(aes(x = i_period, y = germ_n, colour = as.factor(Tm))) + 
+   geom_point()+
+   facet_wrap(facets = "RH")+
+   geom_smooth(method = "gam",formula = y ~ s(x, k = 3))+
+   scale_color_viridis_d()+
+   xlab("Time in hours")+
+   ylab("Germinated conidia (%)")+
+   labs(colour = "VPD")+
+   theme_classic()
+   # scale_x_continuous(limits = c(12,48), breaks = c(12,18,24,30,36,42,48))++
+   # scale_y_continuous(limits = c(0,100), n.breaks = 5)
+   
+```
+
+
+
+```{r plot_raw_time}
+g_vpd |>
+   ggplot(aes(x = vpd, y = germ_n, colour = as.factor(Tm))) + 
+   geom_point()+
+   facet_wrap(facets = c("i_period"))+
+   #geom_smooth(method = "gam",formula = y ~ s(x, k = 5))+
+   scale_color_viridis_d()+
+   xlab("Time in hours")+
+   ylab("Germinated conidia (%)")+
+   labs(colour = "VPD")+
+   theme_classic()
+
+```
+
+```{r}
+m1v <- gam(cbind(germ_n,non_germ_n) ~ s(vpd, k = 6) + s(Tm, k = 3) + s(i_period, k = 3), 
+           data = g_vpd,
+           family = "binomial")
+summary(m1v)
+plot(m1v)
+vis.gam(m1v)
+```
+
+As earlier, lets try and reduce the wiggliness by using P-splines
+```{r}
+m2v <- gam(cbind(germ_n,non_germ_n) ~ s(vpd, k = 7, bs = "ps") + s(Tm, k = 3) + s(i_period, k = 3), 
+           data = g_vpd,
+           family = "binomial")
+summary(m2v)
+plot(m2v)
+vis.gam(m2v,
+        phi = 20,
+        theta = 45)
+```
+
+```{r}
+m3v <- lm(germ_n ~ vpd + Tm + i_period,
+           data = g_vpd)
+summary(m3v)
+
+plot(m3v)
+vis.gam(m2v)
+```
+
+
+
+
+
+
+
+
+
+
+
