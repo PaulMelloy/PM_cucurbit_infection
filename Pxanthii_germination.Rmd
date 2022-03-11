@@ -1,38 +1,47 @@
 ---
 title: "Temperature and VPD effects on *P. xanthii* germination"
 description: |
-  A new article created using the Distill format.
+  Investigating the effect of temperature and VPD on *Podosphera xanthii* conida 
+  in cucurbits
 author:
-  - name: Nora Jones 
-    url: https://example.com/norajones
-    affiliation: Spacely Sprockets
-    affiliation_url: https://example.com/spacelysprokets
+  - name: Paul Melloy 
+    affiliation: The University of Queensland
+    affiliation_url: https://uq.edu.au
 date: "`r Sys.Date()`"
 output: distill::distill_article
 ---
 
 Load R libraries required for analysis
+
 ```{r load_libraries}
 library(data.table)
 library(mgcv)
 library(lme4)
 library(ggplot2)
 ```
+<br>  
 
 Import the clean data
+
 ```{r import_data}
 g_tm <- fread("cache/germination_temperature.csv")
 g_vpd <- fread("cache/germination_response_to_vpd.csv")
 ```
 
+<br>  
+<br>  
 
 ## Impact of Temperature on *P. xanthii* germination  
 Peek at the data
+
 ```{r data_peek}
 head(g_tm)
 str(g_tm)
 ```
-Let's plot the data over time
+<br>  
+### Visualise the raw data  
+Let's plot the data over time  
+
 ```{r plot_raw_time}
 g_tm |>
    ggplot(aes(x = i_period, y = germ_conidia, colour = as.factor(Tm))) + 
@@ -48,7 +57,8 @@ g_tm |>
    
 ```
 <br>  
-Now lets plot germination over temperature separating by infection period
+Now lets plot germination over temperature separating by infection period.  
+
 ```{r plot_raw_Tm}
 g_tm |>
    ggplot(aes(x = Tm, y = germ_conidia, colour = as.factor(i_period))) + 
@@ -68,8 +78,8 @@ These plot shows that the optimum temperature for rapid *P. xanthii* germination
 is around 28C. 
 Also, in the first plot, if we assume at time zero there was no germinated conidia, 
 50% of the conidia germinated within the first 12 hours. 
-In all temperature treatments, between 12 and 36 hours after infection conidial germination increased at 
-a linear rate. 
+In all temperature treatments, between 12 and 36 hours after infection conidial 
+germination increased at a linear rate. 
 After 36 hours the rate of conidia germinating declined to almost zero.
 Curves were fit using a generalised additive model with a smooth spline containing 6 knots.  
 
@@ -80,10 +90,11 @@ that may or may not interact with infection period.
 
 Germination is a binomial response so we need to provide the number of germinated 
 to the number of non-germinated.
-In the first model we will fit a smooth to each predictor and specify that each 
+In the first model we will fit a smooth spline to each predictor and specify that each 
 predictor influences germination independently of the other.
 I have used only 2 and 4 basis spline 'knots' for infection period and temperature
-respectively.
+respectively.  
+
 ```{r model_1}
 m1 <- gam(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k=3) + s(Tm, k =4), 
           data = g_tm,
@@ -96,9 +107,9 @@ vis.gam(m1,
         n.grid = max(g_tm$Tm) - min(g_tm$Tm) # grid cells
         )
 ```
-
+<br>  
 Model two we will investigate whether there is an interaction between temperature 
-and infection period.
+and infection period.  
 
 ```{r model_2}
 m2 <- gam(cbind(germ_conidia, non_germ_conidia) ~ te(i_period, Tm, k = 4),
@@ -116,19 +127,24 @@ This model shows slightly higher R squared and 'explained deviance' values, with
 a lower UBRE  value indicating that model two (`m2`) is the better model.  
 
 Lets compare the models against each other.
+
 ```{r compare_m1m2}
 anova(m1,m2, test = "Chisq")
 ```
 This confirms that model two is the better model and explains more of the deviance.  
 
+<br>  
+
 Yet this model does not tend to reflect the raw data. 
 The plots of the fitted model indicate that 28C showed the highest colonial germination. 
 This might be due to the default type of basis splines, and number of knots. 
 We have exhausted our options for improving the interaction, so let us investigate
-improving the additive model by fitting a better spline to the temperature predictor.
+improving the additive model by fitting a better spline to the temperature predictor.  
+
 P-splines use a penalised least-square method to fit the model and are better in
 non-normal distributions.
 Lets try p splines to see if we can improve the fit.
+
 ```{r model_3}
 m3 <- gam(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k=3) + s(Tm, k =4, bs = "ps"),
           data = g_tm,
@@ -147,6 +163,7 @@ We can also see that the curve has been shifted slightly up towards 28C.
 
 
 Lets compare the models two and three to against each other.
+
 ```{r comp_m2m3}
 anova(m2,m3, test = "Chisq")
 ```
@@ -154,8 +171,10 @@ The models show no significant difference therefore we should use the simpler mo
 model three (`m3`). 
 Model three also shows a better fit to the data.  
   
+<br>  
   
 Next lets see if cyclic versions of the p-splines `"cp"` improve this fit further.
+
 ```{r model_4}
 m4 <- gam(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k=3) + s(Tm, k =4, bs = "cp"),
           data = g_tm,
@@ -174,17 +193,21 @@ We can also see that the curve has been shifted further towards 28C, however the
 the willingness of the model implies it might be overfit, especially between the 
 temperature ranges 20 - 24C.  
 
+<br>  
   
 Lets compare the models three and four to against each other.
+
 ```{r comp_m3m4}
 anova(m3,m4, test = "Chisq")
 ```
 The models show no significant difference, therefore we should keep the simpler 
 model.  
 
+<br>  
 
 Lets use the p splines again however increase the number of knots for temperature
 in attempt to get a better fit to the raw data.
+
 ```{r model_5}
 m5 <- gam(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k=3) + s(Tm, k =6, bs = "ps"),
           data = g_tm,
@@ -201,14 +224,16 @@ This model has less "wiggliness", higher R-squared, explained more deviance and
 has the lowest UBRE score.  
 
 
-Lets compare the models one and three to against each other.
+Lets compare the models four and five to against each other.  
+
 ```{r comp_m4m5}
 anova(m4,m5, test = "Chisq")
 ```
 The p-spline model with more knots explained the most deviance and provides a 
 significantly better fit.
 
-And look at the AIC values of all the models
+And look at the AIC values of all the models.
+
 ```{r AIC_all}
 AIC(m1,m2,m3,m4,m5)
 ```
@@ -216,6 +241,6 @@ AIC(m1,m2,m3,m4,m5)
 This shows that model five is the best fit, with the lowest AIC and an R squared
 of `r round(summary(m5)$r.sq, 4)`.
 Temperature and infection period are significant predictors and the model produces
-a low GVC score or `r round(m5$gcv.ubre,3)`, indicating good predictive ability
+a low UBRE score or `r round(m5$gcv.ubre,3)`, indicating good predictive ability
 and less affected by drop one, tests.
 
