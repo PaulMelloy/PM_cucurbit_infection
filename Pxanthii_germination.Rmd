@@ -216,6 +216,6 @@ AIC(m1,m2,m3,m4,m5)
 This shows that model five is the best fit, with the lowest AIC and an R squared
 of `r round(summary(m5)$r.sq, 4)`.
 Temperature and infection period are significant predictors and the model produces
-a low GVC score or `r round(m5$gvc.ubre.dev,3)`, indicating good predictive ability
+a low GVC score or `r round(m5$gcv.ubre,3)`, indicating good predictive ability
 and less affected by drop one, tests.
 
