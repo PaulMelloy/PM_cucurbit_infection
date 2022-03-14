@@ -252,7 +252,7 @@ and less affected by drop one, tests.
 ## Impact of Temperature on *P. xanthii* germination  
 Peek at the data
 
-```{r data_peek}
+```{r data_peek2}
 head(g_vpd)
 str(g_vpd)
 ```
@@ -260,7 +260,7 @@ str(g_vpd)
 ### Visualise the raw data  
 Let's plot the data over time  
 
-```{r plot_raw_time}
+```{r plot_raw_timexRH}
 g_vpd |>
    ggplot(aes(x = i_period, y = germ_n, colour = as.factor(Tm))) + 
    geom_point()+
@@ -279,7 +279,7 @@ g_vpd |>
 
 
 
-```{r plot_raw_time}
+```{r plot_raw_timexVPD}
 i_p_labs <-c("12 hours","24 hours","36 hours","48 hours")
 names(i_p_labs) <- c(12,24,36,48)
 g_vpd |>
