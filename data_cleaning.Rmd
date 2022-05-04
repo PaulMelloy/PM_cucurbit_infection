@@ -4,7 +4,7 @@ description: |
   Data analysis for paper
 author:
   - name: Paul Melloy 
-    url: https://example.com/norajones
+    url: https://twitter.com/PaulMelloy
     affiliation: The University of Queensland
 date: "`r Sys.Date()`"
 output: distill::distill_article
@@ -143,6 +143,9 @@ branch_vpd[, vpd := round(epiphytoolR::calc_vpd(RH = RH,
 
 # remove "b" from germ_tubes and make it numeric
 branch_vpd[, germ_tubes := as.numeric(gsub("b","",germ_tubes))]
+
+# add column for non-germinated spores
+branch_vpd[, c("germ_tubes", "n", "non_germ") := list(germ_tubes, n, 100 - sum(n)), by = list(vpd, Tm, RH, rep)]
 
 # Change column order
 setcolorder(branch_vpd,
