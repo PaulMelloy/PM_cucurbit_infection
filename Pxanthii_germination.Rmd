@@ -340,7 +340,7 @@ vis.gam(m2v,
         theta = 45)
 ```
 
-There is a better fit and a more decreasing trend in the vpd plot.  
+There is a better fit and a decreasing trend in the vpd plot.  
 
 Next lets try more vpd knots
 
@@ -353,7 +353,9 @@ plot(m3v)
 vis.gam(m3v,
         phi = 20,
         theta = 45)
-par(mfrow = c(2,2))
+par(mfrow = c(2,2),
+    oma = c(0,0,0,0),
+    mar = c(0.1,0.1,0.1,0.1))
 vis.gam(m3v,
         phi = 20,
         theta = 45,
@@ -390,6 +392,42 @@ AIC(m1v,m2v,m3v)
 
 
 
+## Baysian approach  
+
+```{r install_stan}
+#install.packages("rstanarm")
+library(rstanarm)
+library(bayesplot)
+```
+
+```{r}
+fit1 <- stan_gamm4(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k = 3) + s(Tm, k = 6, bs = "ps"), 
+                   data = g_tm, family = "binomial", chains = 1)
+
+plot_nonlinear(fit1)
+
+m5 <- gam(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k=3) + s(Tm, k =4, bs = "ps"),
+          data = g_tm,
+          family = "binomial",
+)
+
+prior_summary(fit1)
+summary(fit1)
+mcmc_areas(as.matrix(fit1),
+           pars = "Tm",
+           prob = 0.95)
+pp_check(fit1,"stat")
+```
 
 
+```{r}
+g_vpd %>%
+  mutate(germ = germ_n/(non_germ_n + germ_n)) %>%
+  group_by(vpd,i_period) %>%
+  summarise(m_germ = mean(germ),
+            Tm= unique(Tm)) %>%
+   filter(i_period == 12 &
+             vpd > 0.13) %>%
+   summary()
+```
 

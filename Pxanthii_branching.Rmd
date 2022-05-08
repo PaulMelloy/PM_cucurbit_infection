@@ -11,6 +11,7 @@ Load R libraries required for analysis
 ```{r load_libraries, warning=FALSE}
 library(data.table)
 library(mgcv)
+library(rstanarm)
 library(lme4)
 library(ggplot2)
 ```
@@ -39,11 +40,7 @@ str(b_tm_vpd2)
 
 unique(b_vpd$Tm)
 unique(b_vpd$vpd)
-b_vpd %>%
-   group_by(vpd,Tm, RH,rep) %>%
-   summarise(germ_tubes = germ_tubes,
-             n = n,
-             non_germ = 100 - sum(n))
+
 
 
 ```
@@ -52,70 +49,71 @@ b_vpd %>%
 Let's plot the data over time  
 
 ```{r plot_raw_time}
-g_tm |>
-   ggplot(aes(x = i_period, y = germ_conidia, colour = as.factor(Tm))) + 
-   geom_point()+
-   geom_smooth(method = "gam",formula = y ~ s(x, k = 3))+
-   scale_color_viridis_d()+
-   xlab("Time in hours")+
-   ylab("Germinated conidia (%)")+
-   labs(colour = "Temperature")+
+b_vpd[,germ_p := (n/non_germ)*100] 
+b_vpd |>
+   ggplot(aes( x = as.factor(vpd), y = germ_p , fill = as.factor(germ_tubes))) + 
+   geom_col(position = "stack")+
+   scale_fill_brewer(palette = "Blues", name = "Germ tubes")+
+   xlab("Vapour pressure deficit")+
+   ylab("Percent germinated")+
+   labs(colour = "Germ tubes")+
    theme_classic()+
-   scale_x_continuous(limits = c(12,48), breaks = c(12,18,24,30,36,42,48))+
-   scale_y_continuous(limits = c(0,100), n.breaks = 5)
-   
+   geom_label(aes(x = as.factor(vpd), y = 4, label = Tm))+
+   scale_y_continuous(limits = c(0,100))
 ```
 <br>  
-Now lets plot germination over temperature separating by infection period.  
 
-```{r plot_raw_Tm}
-g_tm |>
-   ggplot(aes(x = Tm, y = germ_conidia, colour = as.factor(i_period))) + 
-   geom_point()+
-   geom_smooth(method = "gam",formula = y ~ s(x, k = 6))+
-   scale_color_viridis_d()+
-   xlab("Temperature")+
-   ylab("Germinated conidia (%)")+
-   labs(colour = "Time (h)")+
-   theme_classic()+
-   #scale_x_continuous(limits = c(12,48), breaks = c(12,18,24,30,36,42,48))+
-   scale_y_continuous(limits = c(0,100), n.breaks = 5)
-```
-Splines fit with four knots.  
-
-These plot shows that the optimum temperature for rapid *P. xanthii* germination 
-is around 28C. 
-Also, in the first plot, if we assume at time zero there was no germinated conidia, 
-50% of the conidia germinated within the first 12 hours. 
-In all temperature treatments, between 12 and 36 hours after infection conidial 
-germination increased at a linear rate. 
-After 36 hours the rate of conidia germinating declined to almost zero.
-Curves were fit using a generalised additive model with a smooth spline containing 6 knots.  
-
-Lets further evaluate this fit.
-However instead of fitting a temperature as a separate random effect, as depicted 
-in the above plot, we will define temperature as a separate continuous predictor 
-that may or may not interact with infection period.  
-
-Germination is a binomial response so we need to provide the number of germinated 
-to the number of non-germinated.
-In the first model we will fit a smooth spline to each predictor and specify that each 
-predictor influences germination independently of the other.
-I have used only 2 and 4 basis spline 'knots' for infection period and temperature
-respectively.  
 
 ```{r model_1}
-m1 <- gam(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k=3) + s(Tm, k =4), 
-          data = g_tm,
-          family = "binomial")
-summary(m1)
-plot(m1)
-vis.gam(m1,
-        theta = -50, # horizontal rotation
-        phi = 30, # vertical rotation
-        n.grid = max(g_tm$Tm) - min(g_tm$Tm) # grid cells
-        )
+b_vpd_lng <-
+   rbindlist(apply(b_vpd, 1 , function(x) {
+      rbindlist(c(lapply(seq_len(x["n"]), function(x2) {
+         as.data.frame(t(x[c(1:5)]))
+      }),
+      lapply(seq_len(x["non_germ"]), function(x2) {
+         as.data.frame(t(c(x[c(1:4)],
+                           germ_tubes = 0)))
+      })))
+      
+   }))
+
+b_vpd_lng[, c("rep",
+              "germ_tubes",
+              "cham",
+              "vpd") := list(as.integer(rep),
+                             as.ordered(germ_tubes),
+                             paste0(Tm, RH),
+                             as.numeric(vpd))]
+
+b_vpd[, c("rep", 
+              "germ_tubes", 
+              "cham",
+          "vpd") := list(as.integer(rep),
+                            as.integer(germ_tubes),
+                            paste0(Tm,RH),
+                         as.numeric(vpd))]
+
+
+m1 <- glmer(germ_tubes ~ vpd + (vpd|cham/rep), 
+          data = b_vpd_lng)
+
+m2 <- glmer(n ~ germ_tubes * vpd + (vpd|cham/rep), 
+          data = b_vpd,
+          family = "poisson")
+summary(m2)
+
 ```
+
+```{r}
+m1.1 <- stan_polr(germ_tubes ~ vpd , chains = 1,
+                  prior = R2(0.5, what = "median"), 
+                  data = b_vpd_lng)
+summary(m1.1)
+
+
+```
+
+
 <br>  
 Model two we will investigate whether there is an interaction between temperature 
 and infection period.  
