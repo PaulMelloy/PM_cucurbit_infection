@@ -14,6 +14,8 @@ library(mgcv)
 library(rstanarm)
 library(lme4)
 library(ggplot2)
+library(MASS)
+
 ```
 <br>  
 
@@ -52,13 +54,13 @@ Let's plot the data over time
 b_vpd[,germ_p := (n/non_germ)*100] 
 b_vpd |>
    ggplot(aes( x = as.factor(vpd), y = germ_p , fill = as.factor(germ_tubes))) + 
-   geom_col(position = "stack")+
+   geom_col(position = position_stack(reverse = TRUE))+
    scale_fill_brewer(palette = "Blues", name = "Germ tubes")+
    xlab("Vapour pressure deficit")+
    ylab("Percent germinated")+
    labs(colour = "Germ tubes")+
    theme_classic()+
-   geom_label(aes(x = as.factor(vpd), y = 4, label = Tm))+
+   geom_label(aes(x = as.factor(vpd), y = 80, label = Tm))+
    scale_y_continuous(limits = c(0,100))
 ```
 <br>  
@@ -94,22 +96,26 @@ b_vpd[, c("rep",
                          as.numeric(vpd))]
 
 
-m1 <- glmer(germ_tubes ~ vpd + (vpd|cham/rep), 
-          data = b_vpd_lng)
-
-m2 <- glmer(n ~ germ_tubes * vpd + (vpd|cham/rep), 
-          data = b_vpd,
-          family = "poisson")
+# m1 <- glmer(germ_tubes ~ vpd + (vpd|cham/rep), 
+#           data = b_vpd_lng)
+# 
+# m2 <- glmer(n ~ germ_tubes * vpd + (vpd|cham/rep), 
+#           data = b_vpd,
+#           family = "poisson")
 summary(m2)
 
 ```
 
 ```{r}
-m1.1 <- stan_polr(germ_tubes ~ vpd , chains = 1,
+m1.1 <- stan_polr(germ_tubes ~ vpd + Tm, chains = 1,
                   prior = R2(0.5, what = "median"), 
                   data = b_vpd_lng)
 summary(m1.1)
 
+
+m1 <- polr(germ_tubes ~ vpd + Tm, data = b_vpd_lng, Hess = TRUE)
+
+summary(m1)
 
 ```
 
