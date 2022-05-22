@@ -10,6 +10,11 @@ date: "`r Sys.Date()`"
 output: distill::distill_article
 ---
 
+The data analysed in this repository was provided by Dr Zaiton Sapak.
+Data pulled in and cleaned was obtained from her Google Drive folders "Chapter 5- Conidial germination and Infection" and "SAS analysis".  
+
+To clean the data we will need some R libraries for handling data and data manipulation.  
+
 ```{r libraries,message = FALSE}
 library(readxl)
 library(dplyr)
@@ -22,15 +27,19 @@ if("epiphytoolR" %in% names(installed.packages()[, "Package"]) == FALSE) {
 }
 ```
 
+<br>  
+## Temperature experimental data
+### Temperature effect on germination experiment  
+We will begin by reading in data from experiments that assessed the effect of temperature on conidia germination.  
+
+
 ```{r import_data, message = FALSE}
 germ_tm <- read_xlsx("data/Chapter 5 (germination vs temperature vs time incubation at low VPD).xlsx",
                       range = "A1:N32")
-
-
 ```
 
-## Temperature effect on germination experiment
-This data investigated the effect of
+Next we will reformat the data to make it more machine readable then save it to the `/cache` folder, which contains the formatted machine readable data.  
+
 ```{r clean_germ_tm}
 # Remove unnecessary columns and rows
 germ_tm <- data.table(germ_tm)[-c(1,2,7:10,15:18,23:27),-c(4,6,7,9,11,13)]
@@ -73,14 +82,17 @@ fwrite(x = germ_tm,
 
 ```
 
-# Effect of temperature on branching
-
+<br>  
+***  
+### Effect of temperature on branching  
+We will do the same for data collected on the influence of temperature on the number of conidia which advanced past germination to branch and possibly develop infection structures.
 ```{r tm_branch}
 # read in data from sas file
 tm_b <- readLines("data/tempvs.branching(results).sas")[3:40]
 # cut out non-data lines
 tm_b <- tm_b[-2]
-#write it to csv
+
+#write it to csv so it can be read back in cand formatted to a data.frame instead of vector.
 write(tm_b, "cache/Tm_branches.csv")
 
 # read in data using fread
@@ -98,29 +110,16 @@ zero_branch <- tm_b[, (100 - sum(count)),
 
 setnames(zero_branch,old = "V1", new = "count")
 
+# Bind in the data containing non-germinated conidia as conidia with zero branches
 tm_b <- rbind(tm_b,zero_branch)[order(Tm,branchs, rep)]
 
 fwrite(tm_b, "cache/Tm_branching.csv")
 ```
 
-
-```{r}
-branch_vpd <- 
-  read_xls("data/Chapter 5 (germination vs VPD vs temp vs RH).xls",
-           sheet = "Sheet2",
-           range = "AF3:AI182",
-           col_names = c("vpd", "germ_tubes", "rep", "n"))
-
-
-germ_vpd_tm <- 
-  fread("data/220308_branching_vpd_temperature.csv",nrows = 29,header = TRUE)
-           
-
-```
-
-
-
-## Experimental data on VPD effect on germination
+<br>
+***
+## Experimental data on VPD  
+### Effect of vpd on germination
 
 ```{r clean_g_time_vpd}
 # Import
@@ -165,11 +164,79 @@ setcolorder(g_time_vpd,
 fwrite(g_time_vpd,
        file = "cache/germination_response_to_vpd.csv")
 ```
+### Effect of vpd on germination  
 
 
-## VPD effect on germination and branching
-This data investigated the effect of
+
+### Vapour pressure deficit effect on branching  
+
+Read in the raw data.  
+```{r}
+# File not found 
+br_vpd_tm <-
+  fread("data/220308_branching_vpd_temperature.csv",nrows = 29,header = TRUE)
+           
+
+```
+
+
+
 ```{r clean_germ_tm}
+# Remove unnecessary columns and rows
+br_vpd_tm <- br_vpd_tm[-c(5:10,15:24),-c(1,2,9:12,19:22,29)][-c(13)]
+
+# rename leaf number column
+setnames(br_vpd_tm,
+         old = 1:18,
+         new = c("0.03_b1","0.13_b1","0.4_b1","0.7_b1","1.2_b1","1.8_b1",
+                 "0.03_b2","0.13_b2","0.4_b2","0.7_b2","1.2_b2","1.8_b2",
+                 "0.03_b3","0.13_b3","0.4_b3","0.7_b3","1.2_b3","1.8_b3"))
+
+# Add temperature treatment
+br_vpd_tm[ , Tm := rep(c(22,25,28), each = 4)]
+
+# reshape data to long format
+br_vpd_tm <-
+   melt(br_vpd_tm,
+     id.vars = c("Tm"),
+     value.name = "conidia",
+     variable.factor = FALSE)
+
+# split variable column into two columns vpd and branches and remove variable column
+br_vpd_tm[, c("vpd","branches") := tstrsplit(variable, "_b")][, variable := NULL]
+
+# Change column order
+setcolorder(br_vpd_tm,
+            neworder = c("Tm", "vpd", "branches","conidia"))
+
+# set correct classes and add non-germinated
+br_vpd_tm[, c("vpd",
+                "branches",
+                "conidia",
+                "rep") :=
+              list(as.numeric(vpd),
+                   as.numeric(branches),
+                   as.numeric(conidia),
+                   rep(1:4,.N/4))]
+
+# obtain vector of non-germinated???????????
+
+# save data into cache
+fwrite(x = br_vpd_tm,
+       file = "cache/branching_temperature&VPD.csv")
+
+```
+
+
+### VPD branching dataset two
+
+```{r clean_germ_tm}
+branch_vpd <- 
+  read_xls("data/Chapter 5 (germination vs VPD vs temp vs RH).xls",
+           sheet = "Sheet2",
+           range = "AF3:AI182",
+           col_names = c("vpd", "germ_tubes", "rep", "n"))
+
 # make data.table format and add temperature and humidity
 branch_vpd <- data.table(branch_vpd)[, c("Tm","RH") := list(rep(c(22,25,28), each = 12, times = 5),
                                                             rep(c(95,85,75,55,32), each = 12*3))]
@@ -195,55 +262,8 @@ fwrite(x = branch_vpd,
 
 ```
 
-# Effect of vpd at different VPD
 
-```{r clean_germ_tm}
-# Remove unnecessary columns and rows
-germ_vpd_tm <- germ_vpd_tm[-c(5:10,15:24),-c(1,2,9:12,19:22,29)][-c(13)]
-
-# rename leaf number column
-setnames(germ_vpd_tm,
-         old = 1:18,
-         new = c("0.03_b1","0.13_b1","0.4_b1","0.7_b1","1.2_b1","1.8_b1",
-                 "0.03_b2","0.13_b2","0.4_b2","0.7_b2","1.2_b2","1.8_b2",
-                 "0.03_b3","0.13_b3","0.4_b3","0.7_b3","1.2_b3","1.8_b3"))
-
-# Add temperature treatment
-germ_vpd_tm[ , Tm := rep(c(22,25,28), each = 4)]
-
-# reshape data to long format
-germ_vpd_tm <- 
-   melt(germ_vpd_tm,
-     id.vars = c("Tm"),
-     value.name = "conidia",
-     variable.factor = FALSE)
-
-# split variable column into two columns vpd and branches and remove variable column
-germ_vpd_tm[, c("vpd","branches") := tstrsplit(variable, "_b")][, variable := NULL]
-
-# Change column order
-setcolorder(germ_vpd_tm,
-            neworder = c("Tm", "vpd", "branches","conidia"))
-
-# set correct classes and add non-germinated
-germ_vpd_tm[, c("vpd", 
-                "branches", 
-                "conidia", 
-                "rep") := 
-              list(as.numeric(vpd),
-                   as.numeric(branches),
-                   as.numeric(conidia),
-                   rep(1:4,.N/4))]
-
-# obtain vector of non-germinated???????????
-
-# save data into cache
-fwrite(x = germ_vpd_tm,
-       file = "cache/branching_temperature&VPD.csv")
-
-```
-
-
+### More data on germtube branching under different vpd  
 
 ```{r}
 # read in data from sas file
