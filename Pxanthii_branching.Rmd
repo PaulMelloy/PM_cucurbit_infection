@@ -9,11 +9,12 @@ output: html_document
 Load R libraries required for analysis
 
 ```{r load_libraries, warning=FALSE}
-library(data.table)
-library(mgcv)
-library(rstanarm)
-library(lme4)
-library(ggplot2)
+library(data.table) # data structure, cleaning and formatting
+library(mgcv) # gam statistical modells
+library(rstanarm) # Bayesian statistical models
+library(lme4) # Linear mixed effect modelling
+library(ggplot2) # graphing
+library(MASS) # Logistical ordinal regression
 ```
 <br>  
 
@@ -25,6 +26,9 @@ b_vpd <- fread("cache/branching_vpd.csv")
 b_tm_vpd <- fread("cache/branching_temperature&VPD.csv")
 b_tm_vpd2 <- fread("cache/branching_under_vpd&Tm.csv")
 
+summary(b_vpd)
+summary(b_tm_vpd)
+summary(b_tm_vpd2)
 ```
 
 <br>  
@@ -39,12 +43,28 @@ str(b_tm_vpd)
 str(b_tm_vpd2)
 
 unique(b_vpd$Tm)
-unique(b_vpd$vpd)
+unique(b_tm_vpd2$vpd)
 
 
 
 ```
 <br>  
+
+Look at a summary of the data
+```{r}
+b_vpd[, list(n = mean(n),
+             non_germ = mean(non_germ)),
+      by = list(vpd, Tm, RH, germ_tubes)][order(vpd,Tm)]
+
+b_tm_vpd[ ,list(n = mean(conidia)),
+      by = list(vpd, Tm, branches)][order(vpd,Tm)]
+
+b_tm_vpd2[ ,list(n = mean(conidia)),
+      by = list(vpd, Tm, RH,branches)][order(vpd,Tm)]
+
+```
+
+
 ### Visualise the raw data  
 Let's plot the data over time  
 
@@ -52,13 +72,13 @@ Let's plot the data over time
 b_vpd[,germ_p := (n/non_germ)*100] 
 b_vpd |>
    ggplot(aes( x = as.factor(vpd), y = germ_p , fill = as.factor(germ_tubes))) + 
-   geom_col(position = "stack")+
+   geom_col(position = position_stack(reverse = TRUE))+
    scale_fill_brewer(palette = "Blues", name = "Germ tubes")+
    xlab("Vapour pressure deficit")+
    ylab("Percent germinated")+
    labs(colour = "Germ tubes")+
    theme_classic()+
-   geom_label(aes(x = as.factor(vpd), y = 4, label = Tm))+
+   geom_label(aes(x = as.factor(vpd), y = 80, label = Tm))+
    scale_y_continuous(limits = c(0,100))
 ```
 <br>  
@@ -94,12 +114,12 @@ b_vpd[, c("rep",
                          as.numeric(vpd))]
 
 
-m1 <- lmer(germ_tubes ~ vpd + (vpd|cham/rep), 
-          data = b_vpd_lng)
-
-m2 <- glmer(n ~ germ_tubes * vpd + (vpd|cham/rep), 
-          data = b_vpd,
-          family = "poisson")
+# m1 <- glmer(germ_tubes ~ vpd + (vpd|cham/rep), 
+#           data = b_vpd_lng)
+# 
+# m2 <- glmer(n ~ germ_tubes * vpd + (vpd|cham/rep), 
+#           data = b_vpd,
+#           family = "poisson")
 summary(m2)
 
 ```
@@ -107,11 +127,15 @@ summary(m2)
 Test change
 
 ```{r}
-m1.1 <- stan_polr(germ_tubes ~ vpd , chains = 1,
+m1.1 <- stan_polr(germ_tubes ~ vpd + Tm, chains = 1,
                   prior = R2(0.5, what = "median"), 
                   data = b_vpd_lng)
 summary(m1.1)
 
+
+m1 <- polr(germ_tubes ~ vpd + Tm, data = b_vpd_lng, Hess = TRUE)
+
+summary(m1)
 
 ```
 

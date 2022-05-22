@@ -1,0 +1,32 @@
+---
+title: "The effect of temperature on Podosphera xanthii germination and branching"
+description: |
+  The statistical method undertaken in analysing the effect of temperature on 
+  the germination and branching of  _P. xanthii_.  
+author:
+  - name: Paul Melloy
+    url: https://PaulMelloy.github.io
+    affiliation: The University of Queensland
+    affiliation_url: https://uq.edu.au
+date: "`r Sys.Date()`"
+output: distill::distill_article
+---
+
+Load R libraries required for analysis
+
+```{r load_libraries, warning=FALSE}
+library(data.table) # data structure, cleaning and formatting
+library(mgcv) # gam statistical modells
+library(rstanarm) # Bayesian statistical models
+library(lme4) # Linear mixed effect modelling
+library(ggplot2) # graphing
+library(ggplot2)
+```
+<br>  
+
+```{r import_data}
+g_tm <- fread("cache/germination_temperature.csv")
+g_vpd <- fread("cache/germination_response_to_vpd.csv")
+```
+
+

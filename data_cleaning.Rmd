@@ -26,37 +26,6 @@ if("epiphytoolR" %in% names(installed.packages()[, "Package"]) == FALSE) {
 germ_tm <- read_xlsx("data/Chapter 5 (germination vs temperature vs time incubation at low VPD).xlsx",
                       range = "A1:N32")
 
-g_time_vpd <- bind_rows(
-  read_xls(
-    "data/chapter 5 (germination vs VPD vs temp vs RH).xls",
-    sheet = "Sheet1",
-    range = "B63:F158",
-    col_names = c("RH", "Tm", "i_period", "rep", "germ_n")
-  ),
-  read_xls(
-    "data/chapter 5 (germination vs VPD vs temp vs RH).xls",
-    sheet = "Sheet1",
-    range = "I63:M158",
-    col_names = c("RH", "Tm", "i_period", "rep", "germ_n")
-  ),
-  read_xls(
-    "data/chapter 5 (germination vs VPD vs temp vs RH).xls",
-    sheet = "Sheet1",
-    range = "P63:T158",
-    col_names = c("RH", "Tm", "i_period", "rep", "germ_n")
-  )
-)
-
-branch_vpd <- 
-  read_xls("data/Chapter 5 (germination vs VPD vs temp vs RH).xls",
-           sheet = "Sheet2",
-           range = "AF3:AI182",
-           col_names = c("vpd", "germ_tubes", "rep", "n"))
-
-
-germ_vpd_tm <- 
-  fread("data/220308_branching_vpd_temperature.csv",nrows = 29,header = TRUE)
-           
 
 ```
 
@@ -104,9 +73,78 @@ fwrite(x = germ_tm,
 
 ```
 
+# Effect of temperature on branching
+
+```{r tm_branch}
+# read in data from sas file
+tm_b <- readLines("data/tempvs.branching(results).sas")[3:40]
+# cut out non-data lines
+tm_b <- tm_b[-2]
+#write it to csv
+write(tm_b, "cache/Tm_branches.csv")
+
+# read in data using fread
+tm_b <- fread("cache/Tm_branches.csv", 
+              col.names = c("obs", "Tm", "branchs","rep", "count"))
+
+# Add relative humidity and temperature data
+tm_b[ , c("Tm","branchs", "obs") := list(as.numeric(gsub("oC","",Tm)),
+                                         as.numeric(gsub("b","",branchs)),
+                                         NULL)]
+
+# recalculate vpd and convert branches to numeric
+zero_branch <- tm_b[, (100 - sum(count)), 
+                      by = .(Tm, rep)][,branchs :=0][, .(Tm, branchs, rep, V1)]
+
+setnames(zero_branch,old = "V1", new = "count")
+
+tm_b <- rbind(tm_b,zero_branch)[order(Tm,branchs, rep)]
+
+fwrite(tm_b, "cache/Tm_branching.csv")
+```
+
+
+```{r}
+branch_vpd <- 
+  read_xls("data/Chapter 5 (germination vs VPD vs temp vs RH).xls",
+           sheet = "Sheet2",
+           range = "AF3:AI182",
+           col_names = c("vpd", "germ_tubes", "rep", "n"))
+
+
+germ_vpd_tm <- 
+  fread("data/220308_branching_vpd_temperature.csv",nrows = 29,header = TRUE)
+           
+
+```
+
+
+
 ## Experimental data on VPD effect on germination
 
 ```{r clean_g_time_vpd}
+# Import
+g_time_vpd <- bind_rows(
+  read_xls(
+    "data/chapter 5 (germination vs VPD vs temp vs RH).xls",
+    sheet = "Sheet1",
+    range = "B63:F158",
+    col_names = c("RH", "Tm", "i_period", "rep", "germ_n")
+  ),
+  read_xls(
+    "data/chapter 5 (germination vs VPD vs temp vs RH).xls",
+    sheet = "Sheet1",
+    range = "I63:M158",
+    col_names = c("RH", "Tm", "i_period", "rep", "germ_n")
+  ),
+  read_xls(
+    "data/chapter 5 (germination vs VPD vs temp vs RH).xls",
+    sheet = "Sheet1",
+    range = "P63:T158",
+    col_names = c("RH", "Tm", "i_period", "rep", "germ_n")
+  )
+)
+
 # remove characters from temperature and time, make RH as a percentage
 setDT(g_time_vpd)[, c("RH", "Tm", "i_period","non_germ_n") :=
                   list(RH * 100,
