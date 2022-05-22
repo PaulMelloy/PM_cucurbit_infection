@@ -94,7 +94,7 @@ b_vpd[, c("rep",
                          as.numeric(vpd))]
 
 
-m1 <- glmer(germ_tubes ~ vpd + (vpd|cham/rep), 
+m1 <- lmer(germ_tubes ~ vpd + (vpd|cham/rep), 
           data = b_vpd_lng)
 
 m2 <- glmer(n ~ germ_tubes * vpd + (vpd|cham/rep), 
@@ -103,6 +103,8 @@ m2 <- glmer(n ~ germ_tubes * vpd + (vpd|cham/rep),
 summary(m2)
 
 ```
+
+Test change
 
 ```{r}
 m1.1 <- stan_polr(germ_tubes ~ vpd , chains = 1,
