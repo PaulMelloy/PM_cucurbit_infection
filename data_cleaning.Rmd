@@ -72,14 +72,37 @@ germ_tm <-
      value.name = "germ_conidia")
 
 # remove "oC" from temperature and make it numeric
-germ_tm[, c("Tm","germ_conidia","non_germ_conidia") := list(as.numeric(gsub("oC","",Tm)),
+germ_tm[, c("Tm", "leaf", "germ_conidia","non_germ_conidia") := list(as.numeric(gsub("oC","",Tm)),
+                                                                     as.numeric(gsub("L","",leaf)),
                                             as.numeric(germ_conidia),
                                             100 - as.numeric(germ_conidia))]
 
 # Change column order
 setcolorder(germ_tm,
             neworder = c("Tm", "i_period", "leaf", "germ_conidia","non_germ_conidia"))
+```
 
+While not recorded in the raw data, no germination was observed at temperatures
+8C or 35C. 
+This is important to include for the data analysis.  
+
+```{r}
+germ_tm <- rbindlist(
+   list(
+      germ_tm,
+      list(Tm = c(rep(8, 4 * 4),
+                  rep(35, 4 * 4)),
+      i_period = rep(c(12, 24, 26, 48), each = 4*2),
+      leaf = rep(1:2, each = 2, times = 2 * 2 * 2),
+      germ_conidia = rep(0, 4 * 4 *2),
+      non_germ_conidia = rep(100, 4 * 4*2))
+   ), use.names = TRUE
+)
+```
+
+
+
+```{r write_germ_tm}
 # save data into cache
 fwrite(x = germ_tm,
        file = "cache/germination_temperature.csv")
@@ -105,23 +128,47 @@ write(br_tm, "cache/Tm_branches.csv")
 
 # read in data using fread
 br_tm <- fread("cache/Tm_branches.csv", 
-              col.names = c("obs", "Tm", "branchs","rep", "count"))
+              col.names = c("obs", "Tm", "branches","rep", "conidia"))
 
 # Add relative humidity and temperature data
-br_tm[ , c("Tm","branchs", "obs") := list(as.numeric(gsub("oC","",Tm)),
-                                         as.numeric(gsub("b","",branchs)),
+br_tm[ , c("Tm","branches", "obs") := list(as.numeric(gsub("oC","",Tm)),
+                                         as.numeric(gsub("b","",branches)),
                                          NULL)]
 
 # recalculate vpd and convert branches to numeric
-zero_branch <- br_tm[, (100 - sum(count)), 
-                      by = .(Tm, rep)][,branchs :=0][, .(Tm, branchs, rep, V1)]
+zero_branch <- br_tm[, (100 - sum(conidia)), 
+                      by = .(Tm, rep)][,branches :=0][, .(Tm, branches, rep, V1)]
 
-setnames(zero_branch,old = "V1", new = "count")
+setnames(zero_branch,old = "V1", new = "conidia")
 
 # Bind in the data containing non-germinated conidia as conidia with zero branches
-br_tm <- rbind(br_tm,zero_branch)[order(Tm,branchs, rep)]
+br_tm <- rbind(br_tm,zero_branch)[, conidia := round(conidia)][order(Tm,branches, rep),]
+```
 
-fwrite(br_tm, "cache/Tm_branching.csv")
+While not recorded in the raw data, no germination was observed at temperatures
+8C or 35C. 
+This is important to include for the data analysis.  
+
+```{r}
+br_tm <- rbindlist(
+   list(
+      br_tm,
+      list(Tm = c(rep(8, 4 * 2),
+                  rep(35, 4 * 2)),
+           branches = rep(c(0,1,2,3), 
+                         each = 2,
+                         times = 2),
+           rep = rep(1:2, 8),
+           conidia = rep(c(100,0,0,0), 
+                         each = 2,
+                         times = 2)
+      )
+   ), use.names = TRUE
+)
+```
+
+```{r save_br_tm}
+fwrite(br_tm, "cache/branching_temperature.csv")
 ```
 
 <br>  
@@ -171,10 +218,15 @@ germ_vpd[, vpd := round(epiphytoolR::calc_vpd(RH = RH,
 # Change column order
 setcolorder(germ_vpd,
             neworder = c("RH", "Tm", "vpd", "i_period", "rep", "germ_n", "non_germ_n"))
+```
 
+
+
+
+```{r save_g_vpd}
 # write out clean data
 fwrite(germ_vpd,
-       file = "cache/germination_response_to_vpd.csv")
+       file = "cache/germination_vpd.csv")
 ```
 
 <br> 
@@ -251,7 +303,7 @@ br_vpd <- rbind(br_vpd,zero_branch)[order(Tm,branches, rep)]
 
 # save data into cache
 fwrite(x = br_vpd,
-       file = "cache/branching_temperature&VPD.csv")
+       file = "cache/branching_VPD.csv")
 
 ```
 
@@ -300,7 +352,7 @@ br_vpd2 <- rbind(br_vpd2,zero_branch)[order(Tm,branches, rep)]
 
 # save data into cache
 fwrite(x = br_vpd2,
-       file = "cache/branching_vpd.csv")
+       file = "cache/branching_VPD2.csv")
 
 ```
 
@@ -364,7 +416,7 @@ br_vpd3 <- rbind(br_vpd3, zero_branch)[order(Tm,branches, rep)]
 
 
 fwrite(br_vpd3,
-       file = "cache/branching_under_vpd&Tm.csv")
+       file = "cache/branching_VPD3.csv")
 
 ```
 

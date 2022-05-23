@@ -2594,15 +2594,39 @@ machine readable data.</p>
      value.name <span class="op">=</span> <span class="st">&quot;germ_conidia&quot;</span><span class="op">)</span>
 
 <span class="co"># remove &quot;oC&quot; from temperature and make it numeric</span>
-<span class="va">germ_tm</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;Tm&quot;</span>,<span class="st">&quot;germ_conidia&quot;</span>,<span class="st">&quot;non_germ_conidia&quot;</span><span class="op">)</span> <span class="op">:=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">gsub</a></span><span class="op">(</span><span class="st">&quot;oC&quot;</span>,<span class="st">&quot;&quot;</span>,<span class="va">Tm</span><span class="op">)</span><span class="op">)</span>,
+<span class="va">germ_tm</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;Tm&quot;</span>, <span class="st">&quot;leaf&quot;</span>, <span class="st">&quot;germ_conidia&quot;</span>,<span class="st">&quot;non_germ_conidia&quot;</span><span class="op">)</span> <span class="op">:=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">gsub</a></span><span class="op">(</span><span class="st">&quot;oC&quot;</span>,<span class="st">&quot;&quot;</span>,<span class="va">Tm</span><span class="op">)</span><span class="op">)</span>,
+                                                                     <span class="fu"><a href="https://rdrr.io/r/base/numeric.html">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">gsub</a></span><span class="op">(</span><span class="st">&quot;L&quot;</span>,<span class="st">&quot;&quot;</span>,<span class="va">leaf</span><span class="op">)</span><span class="op">)</span>,
                                             <span class="fu"><a href="https://rdrr.io/r/base/numeric.html">as.numeric</a></span><span class="op">(</span><span class="va">germ_conidia</span><span class="op">)</span>,
                                             <span class="fl">100</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html">as.numeric</a></span><span class="op">(</span><span class="va">germ_conidia</span><span class="op">)</span><span class="op">)</span><span class="op">]</span>
 
 <span class="co"># Change column order</span>
 <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/setcolorder.html">setcolorder</a></span><span class="op">(</span><span class="va">germ_tm</span>,
             neworder <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;Tm&quot;</span>, <span class="st">&quot;i_period&quot;</span>, <span class="st">&quot;leaf&quot;</span>, <span class="st">&quot;germ_conidia&quot;</span>,<span class="st">&quot;non_germ_conidia&quot;</span><span class="op">)</span><span class="op">)</span>
-
-<span class="co"># save data into cache</span>
+</code></pre>
+</div>
+</div>
+<p>While not recorded in the raw data, no germination was observed at
+temperatures 8C or 35C. This is important to include for the data
+analysis.</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class="va">germ_tm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/rbindlist.html">rbindlist</a></span><span class="op">(</span>
+   <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>
+      <span class="va">germ_tm</span>,
+      <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>Tm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="fl">8</span>, <span class="fl">4</span> <span class="op">*</span> <span class="fl">4</span><span class="op">)</span>,
+                  <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="fl">35</span>, <span class="fl">4</span> <span class="op">*</span> <span class="fl">4</span><span class="op">)</span><span class="op">)</span>,
+      i_period <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">12</span>, <span class="fl">24</span>, <span class="fl">26</span>, <span class="fl">48</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">4</span><span class="op">*</span><span class="fl">2</span><span class="op">)</span>,
+      leaf <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span>, each <span class="op">=</span> <span class="fl">2</span>, times <span class="op">=</span> <span class="fl">2</span> <span class="op">*</span> <span class="fl">2</span> <span class="op">*</span> <span class="fl">2</span><span class="op">)</span>,
+      germ_conidia <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">4</span> <span class="op">*</span> <span class="fl">4</span> <span class="op">*</span><span class="fl">2</span><span class="op">)</span>,
+      non_germ_conidia <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="fl">100</span>, <span class="fl">4</span> <span class="op">*</span> <span class="fl">4</span><span class="op">*</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span>
+   <span class="op">)</span>, use.names <span class="op">=</span> <span class="cn">TRUE</span>
+<span class="op">)</span>
+</code></pre>
+</div>
+</div>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class="co"># save data into cache</span>
 <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/fwrite.html">fwrite</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">germ_tm</span>,
        file <span class="op">=</span> <span class="st">&quot;cache/germination_temperature.csv&quot;</span><span class="op">)</span>
 </code></pre>
@@ -2627,23 +2651,50 @@ branch and possibly develop infection structures.</p>
 
 <span class="co"># read in data using fread</span>
 <span class="va">br_tm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/fread.html">fread</a></span><span class="op">(</span><span class="st">&quot;cache/Tm_branches.csv&quot;</span>, 
-              col.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;obs&quot;</span>, <span class="st">&quot;Tm&quot;</span>, <span class="st">&quot;branchs&quot;</span>,<span class="st">&quot;rep&quot;</span>, <span class="st">&quot;count&quot;</span><span class="op">)</span><span class="op">)</span>
+              col.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;obs&quot;</span>, <span class="st">&quot;Tm&quot;</span>, <span class="st">&quot;branches&quot;</span>,<span class="st">&quot;rep&quot;</span>, <span class="st">&quot;conidia&quot;</span><span class="op">)</span><span class="op">)</span>
 
 <span class="co"># Add relative humidity and temperature data</span>
-<span class="va">br_tm</span><span class="op">[</span> , <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;Tm&quot;</span>,<span class="st">&quot;branchs&quot;</span>, <span class="st">&quot;obs&quot;</span><span class="op">)</span> <span class="op">:=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">gsub</a></span><span class="op">(</span><span class="st">&quot;oC&quot;</span>,<span class="st">&quot;&quot;</span>,<span class="va">Tm</span><span class="op">)</span><span class="op">)</span>,
-                                         <span class="fu"><a href="https://rdrr.io/r/base/numeric.html">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">gsub</a></span><span class="op">(</span><span class="st">&quot;b&quot;</span>,<span class="st">&quot;&quot;</span>,<span class="va">branchs</span><span class="op">)</span><span class="op">)</span>,
+<span class="va">br_tm</span><span class="op">[</span> , <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;Tm&quot;</span>,<span class="st">&quot;branches&quot;</span>, <span class="st">&quot;obs&quot;</span><span class="op">)</span> <span class="op">:=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">gsub</a></span><span class="op">(</span><span class="st">&quot;oC&quot;</span>,<span class="st">&quot;&quot;</span>,<span class="va">Tm</span><span class="op">)</span><span class="op">)</span>,
+                                         <span class="fu"><a href="https://rdrr.io/r/base/numeric.html">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">gsub</a></span><span class="op">(</span><span class="st">&quot;b&quot;</span>,<span class="st">&quot;&quot;</span>,<span class="va">branches</span><span class="op">)</span><span class="op">)</span>,
                                          <span class="cn">NULL</span><span class="op">)</span><span class="op">]</span>
 
 <span class="co"># recalculate vpd and convert branches to numeric</span>
-<span class="va">zero_branch</span> <span class="op">&lt;-</span> <span class="va">br_tm</span><span class="op">[</span>, <span class="op">(</span><span class="fl">100</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">count</span><span class="op">)</span><span class="op">)</span>, 
-                      by <span class="op">=</span> <span class="fu">.</span><span class="op">(</span><span class="va">Tm</span>, <span class="va">rep</span><span class="op">)</span><span class="op">]</span><span class="op">[</span>,<span class="va">branchs</span> <span class="op">:=</span><span class="fl">0</span><span class="op">]</span><span class="op">[</span>, <span class="fu">.</span><span class="op">(</span><span class="va">Tm</span>, <span class="va">branchs</span>, <span class="va">rep</span>, <span class="va">V1</span><span class="op">)</span><span class="op">]</span>
+<span class="va">zero_branch</span> <span class="op">&lt;-</span> <span class="va">br_tm</span><span class="op">[</span>, <span class="op">(</span><span class="fl">100</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">conidia</span><span class="op">)</span><span class="op">)</span>, 
+                      by <span class="op">=</span> <span class="fu">.</span><span class="op">(</span><span class="va">Tm</span>, <span class="va">rep</span><span class="op">)</span><span class="op">]</span><span class="op">[</span>,<span class="va">branches</span> <span class="op">:=</span><span class="fl">0</span><span class="op">]</span><span class="op">[</span>, <span class="fu">.</span><span class="op">(</span><span class="va">Tm</span>, <span class="va">branches</span>, <span class="va">rep</span>, <span class="va">V1</span><span class="op">)</span><span class="op">]</span>
 
-<span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/setattr.html">setnames</a></span><span class="op">(</span><span class="va">zero_branch</span>,old <span class="op">=</span> <span class="st">&quot;V1&quot;</span>, new <span class="op">=</span> <span class="st">&quot;count&quot;</span><span class="op">)</span>
+<span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/setattr.html">setnames</a></span><span class="op">(</span><span class="va">zero_branch</span>,old <span class="op">=</span> <span class="st">&quot;V1&quot;</span>, new <span class="op">=</span> <span class="st">&quot;conidia&quot;</span><span class="op">)</span>
 
 <span class="co"># Bind in the data containing non-germinated conidia as conidia with zero branches</span>
-<span class="va">br_tm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/rbindlist.html">rbind</a></span><span class="op">(</span><span class="va">br_tm</span>,<span class="va">zero_branch</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/setorder.html">order</a></span><span class="op">(</span><span class="va">Tm</span>,<span class="va">branchs</span>, <span class="va">rep</span><span class="op">)</span><span class="op">]</span>
-
-<span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/fwrite.html">fwrite</a></span><span class="op">(</span><span class="va">br_tm</span>, <span class="st">&quot;cache/Tm_branching.csv&quot;</span><span class="op">)</span>
+<span class="va">br_tm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/rbindlist.html">rbind</a></span><span class="op">(</span><span class="va">br_tm</span>,<span class="va">zero_branch</span><span class="op">)</span><span class="op">[</span>, <span class="va">conidia</span> <span class="op">:=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="va">conidia</span><span class="op">)</span><span class="op">]</span><span class="op">[</span><span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/setorder.html">order</a></span><span class="op">(</span><span class="va">Tm</span>,<span class="va">branches</span>, <span class="va">rep</span><span class="op">)</span>,<span class="op">]</span>
+</code></pre>
+</div>
+</div>
+<p>While not recorded in the raw data, no germination was observed at
+temperatures 8C or 35C. This is important to include for the data
+analysis.</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class="va">br_tm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/rbindlist.html">rbindlist</a></span><span class="op">(</span>
+   <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>
+      <span class="va">br_tm</span>,
+      <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>Tm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="fl">8</span>, <span class="fl">4</span> <span class="op">*</span> <span class="fl">2</span><span class="op">)</span>,
+                  <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="fl">35</span>, <span class="fl">4</span> <span class="op">*</span> <span class="fl">2</span><span class="op">)</span><span class="op">)</span>,
+           branches <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">1</span>,<span class="fl">2</span>,<span class="fl">3</span><span class="op">)</span>, 
+                         each <span class="op">=</span> <span class="fl">2</span>,
+                         times <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>,
+           rep <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span>, <span class="fl">8</span><span class="op">)</span>,
+           conidia <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">100</span>,<span class="fl">0</span>,<span class="fl">0</span>,<span class="fl">0</span><span class="op">)</span>, 
+                         each <span class="op">=</span> <span class="fl">2</span>,
+                         times <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>
+      <span class="op">)</span>
+   <span class="op">)</span>, use.names <span class="op">=</span> <span class="cn">TRUE</span>
+<span class="op">)</span>
+</code></pre>
+</div>
+</div>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/fwrite.html">fwrite</a></span><span class="op">(</span><span class="va">br_tm</span>, <span class="st">&quot;cache/branching_temperature.csv&quot;</span><span class="op">)</span>
 </code></pre>
 </div>
 </div>
@@ -2690,10 +2741,14 @@ branch and possibly develop infection structures.</p>
 <span class="co"># Change column order</span>
 <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/setcolorder.html">setcolorder</a></span><span class="op">(</span><span class="va">germ_vpd</span>,
             neworder <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;RH&quot;</span>, <span class="st">&quot;Tm&quot;</span>, <span class="st">&quot;vpd&quot;</span>, <span class="st">&quot;i_period&quot;</span>, <span class="st">&quot;rep&quot;</span>, <span class="st">&quot;germ_n&quot;</span>, <span class="st">&quot;non_germ_n&quot;</span><span class="op">)</span><span class="op">)</span>
-
-<span class="co"># write out clean data</span>
+</code></pre>
+</div>
+</div>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class="co"># write out clean data</span>
 <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/fwrite.html">fwrite</a></span><span class="op">(</span><span class="va">germ_vpd</span>,
-       file <span class="op">=</span> <span class="st">&quot;cache/germination_response_to_vpd.csv&quot;</span><span class="op">)</span>
+       file <span class="op">=</span> <span class="st">&quot;cache/germination_vpd.csv&quot;</span><span class="op">)</span>
 </code></pre>
 </div>
 </div>
@@ -2768,7 +2823,7 @@ deficit effect on branching</h3>
 
 <span class="co"># save data into cache</span>
 <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/fwrite.html">fwrite</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">br_vpd</span>,
-       file <span class="op">=</span> <span class="st">&quot;cache/branching_temperature&amp;VPD.csv&quot;</span><span class="op">)</span>
+       file <span class="op">=</span> <span class="st">&quot;cache/branching_VPD.csv&quot;</span><span class="op">)</span>
 </code></pre>
 </div>
 </div>
@@ -2817,7 +2872,7 @@ deficit effect on branching</h3>
 
 <span class="co"># save data into cache</span>
 <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/fwrite.html">fwrite</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">br_vpd2</span>,
-       file <span class="op">=</span> <span class="st">&quot;cache/branching_vpd.csv&quot;</span><span class="op">)</span>
+       file <span class="op">=</span> <span class="st">&quot;cache/branching_VPD2.csv&quot;</span><span class="op">)</span>
 </code></pre>
 </div>
 </div>
@@ -2881,7 +2936,7 @@ on germtube branching under different vpd</h3>
 
 
 <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/fwrite.html">fwrite</a></span><span class="op">(</span><span class="va">br_vpd3</span>,
-       file <span class="op">=</span> <span class="st">&quot;cache/branching_under_vpd&amp;Tm.csv&quot;</span><span class="op">)</span>
+       file <span class="op">=</span> <span class="st">&quot;cache/branching_VPD3.csv&quot;</span><span class="op">)</span>
 </code></pre>
 </div>
 </div>
