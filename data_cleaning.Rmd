@@ -104,7 +104,7 @@ germ_tm <- rbindlist(
 
 ```{r write_germ_tm}
 # save data into cache
-fwrite(x = germ_tm,
+fwrite(x = germ_tm[order(Tm,i_period, leaf),],
        file = "cache/germination_temperature.csv")
 
 ```
@@ -142,7 +142,7 @@ zero_branch <- br_tm[, (100 - sum(conidia)),
 setnames(zero_branch,old = "V1", new = "conidia")
 
 # Bind in the data containing non-germinated conidia as conidia with zero branches
-br_tm <- rbind(br_tm,zero_branch)[, conidia := round(conidia)][order(Tm,branches, rep),]
+br_tm <- rbind(br_tm,zero_branch)[, conidia := round(conidia)]
 ```
 
 While not recorded in the raw data, no germination was observed at temperatures
@@ -168,7 +168,7 @@ br_tm <- rbindlist(
 ```
 
 ```{r save_br_tm}
-fwrite(br_tm, "cache/branching_temperature.csv")
+fwrite(br_tm[order(Tm,branches, rep),], "cache/branching_temperature.csv")
 ```
 
 <br>  
