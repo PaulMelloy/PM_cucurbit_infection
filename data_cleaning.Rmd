@@ -92,10 +92,14 @@ germ_tm <- rbindlist(
       germ_tm,
       list(Tm = c(rep(8, 4 * 4),
                   rep(35, 4 * 4)),
-      i_period = rep(c(12, 24, 26, 48), each = 4*2),
-      leaf = rep(1:2, each = 2, times = 2 * 2 * 2),
-      germ_conidia = rep(0, 4 * 4 *2),
-      non_germ_conidia = rep(100, 4 * 4*2))
+      i_period = rep(c(12, 24, 26, 48), 
+                     each = 4,
+                     times = 2),
+      leaf = rep(1:2, 
+                 each = 2, 
+                 times = 2 * 2 * 2),
+      germ_conidia = rep(0, 4 * 4 * 2),
+      non_germ_conidia = rep(100, 4 * 4 *2))
    ), use.names = TRUE
 )
 ```
