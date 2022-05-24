@@ -281,7 +281,7 @@ br_tm |>
    geom_col(position = position_stack(reverse = TRUE))+
    scale_fill_brewer(palette = "Blues", name = "Germ tube/\nbranches")+
    xlab("Temperature")+
-   ylab("Percent germinated")+
+   ylab("Conidia")+
    labs(colour = "Germ tubes")+
    theme_classic()
    
@@ -289,31 +289,38 @@ br_tm |>
 
 This plot shows that the optimum temperature for rapid *P. xanthii* germination 
 is around 28C. 
-Also, in the first plot, if we assume at time zero there was no germinated conidia, 
-50% of the conidia germinated within the first 12 hours. 
-In all temperature treatments, between 12 and 36 hours after infection conidial 
-germination increased at a linear rate. 
-After 36 hours the rate of conidia germinating declined to almost zero.
-Curves were fit using a generalised additive model with a smooth spline containing 6 knots.  
+Also, no germination occurs at temperatures 8$^\circ$C or less, and over 35$^\circ$C.
 
-Lets further evaluate this fit.
-However instead of fitting a temperature as a separate random effect, as depicted 
-in the above plot, we will define temperature as a separate continuous predictor 
-that may or may not interact with infection period.  
+Lets build a model to help us predict what state a conidia will be in, after 36 
+hours when incubated at each respective temperature.
 
-Germination is a binomial response so we need to provide the number of germinated 
-to the number of non-germinated.
-In the first model we will fit a smooth spline to each predictor and specify that each 
-predictor influences germination independently of the other.
-I have used only 2 and 4 basis spline 'knots' for infection period and temperature
-respectively.  
+Here we have a response variable, `branches` which describes the progress of a potential
+infection by a single conidia.  
+   - `0` which represents a non-germinated conidia,  
+   - `1` a germinated conidia with one germ tube,  
+   - `2` a germinated conidia with two germ tubes,  
+   - `3` a germinated conidia with three or more germ tubes.  
+   
+The response variable is might be thought of as continuous. 
+However the given our aim is to estimate the survival of conidia on a cucurbit leaf,
+and if successful infection might occur estimating the number of branched hyphae 
+beyond three is meaningless, given Trecate (2019) assumes successful infection of
+a host cell if there are more than 2 germ tubes.
+`branches` would be better characterised as ordinal and therefore leads us to using
+*ordinal logistic regression* methods.  
 
-### Ordinal logistic regression
-The aim of this analysis is to predict the likelihood of a conidia germinating and branching under different temperature conditions.  
-We could state that the response variable is the state of the conidia, wheather it be non-germinated (0), germinated (1), branched (2), or twice branched (3) with three germ-tubes.
-Because this is count data and our response is not binomial but multinomial and ordered,the type of analysis we should use is an ordinal logistic regression.  
+### Ordinal logistic regression  
+The aim of this analysis is to predict the likelihood of a conidia germinating and 
+branching under different temperature conditions.  
+We could state that the response variable is the state of the conidia, wheather 
+it be non-germinated (0), germinated (1), branched (2), or twice branched (3) with three germ-tubes.
+Because this is count data and our response is not binomial but multinomial and 
+ordered,the type of analysis we should use is an ordinal logistic regression.  
 
-```{r}
+First we need to convert the count data into a longer format, so each row represents
+an observation.  
+
+```{r to_long}
 br_tm_lng <-
    rbindlist(apply(br_tm, 1 , function(x) {
       rbindlist(lapply(seq_len(x["conidia"]), function(x2) {
@@ -321,16 +328,108 @@ br_tm_lng <-
       }))
    }))
 
-br_tm_lng[, c("Tm", "branches", "rep") := list(as.factor(Tm),
-                                               as.factor(branches), 
+# classify each column
+br_tm_lng[, c("Tm", "branches", "rep") := list(Tm,
+                                               ordered(branches), 
                                                as.factor(rep))]
 ```
 
+Now we have prepared our data lets try it in our first model.  
 
 ```{r}
-m1 <- polr(branches ~ Tm, data = br_tm_lng, Hess = TRUE)
+m1 <- polr(branches ~ Tm + rep, 
+           data = br_tm_lng, 
+           Hess = TRUE)
 
 summary(m1)
 
+```
+
+Lets test the predictions by this model output something reasonable compared to the raw data.
+
+```{r}
+test_dat <- data.table(Tm = 5:40, 
+                       rep = as.factor(rbinom(length(5:40),1,0.5)+1))
+
+m1_pred <- cbind(Tm = test_dat$Tm,
+                 round(predict(m1,
+                               test_dat[,1],
+                               type = "p"),
+                       3))
+
+plot(m1_pred[,"Tm"], m1_pred[,"0"],
+     type = "l",
+     ylim = c(0,1))
+lines(m1_pred[,"Tm"], m1_pred[,"1"], col = "blue")
+lines(m1_pred[,"Tm"], m1_pred[,"2"], col = "red")
+lines(m1_pred[,"Tm"], m1_pred[,"3"], col = "green")
+
+```
+
+The result is rather linear and predicts more branches at 40C when the raw data does not see any from 35C or presumably above.
+
+Lets try generating splines to our data and modelling again.
+
+
+```{r}
+library(splines)
+br_tm_lng[, c("Tm1",
+              "Tm2") := .(ns(Tm, 
+                             Boundary.knots = c(8,35), 
+                             knots = 3)[,1],
+                          ns(Tm, 
+                             Boundary.knots = c(8,35), 
+                             knots = 3)[,2])]
+
+
+m2 <- polr(branches ~ Tm1+Tm2 + rep, data = br_tm_lng, Hess = TRUE)
+
+m3 <- polr(branches ~ bs(Tm,Boundary.knots = c(8,35)) + rep, 
+           data = br_tm_lng, 
+           Hess = TRUE)
+
+summary(m3)
+
+```
+?Now lets try predicting from this model
+
+```{r}
+test_dat[, c("Tm1", "Tm2","Tm") :=
+            .(ns(Tm, Boundary.knots = c(8,35), 
+                             knots = 3)[,1],
+              ns(Tm, Boundary.knots = c(8,35), 
+                             knots = 3)[,2],
+              NULL)] 
+
+
+m2_pred <- round(predict(m2,
+                               test_dat,
+                               type = "p"),
+                       3)
+
+m3_pred <- predict(m3,test_dat, type = "p")
+
+plot(5:40, m3_pred[,"0"],
+     type = "l",
+     ylim = c(0,1))
+lines(5:40, m3_pred[,"1"], col = "blue")
+lines(5:40, m3_pred[,"2"], col = "red")
+lines(5:40, m3_pred[,"3"], col = "green")
+
+
+```
+
+Maybe I will try a different angle of a gam with count data
+
+```{r}
+head(br_tm)
+
+m3 <-gam(conidia ~ ordered(branches)+ s(Tm,k = 5) + rep, data = br_tm)
+summary(m3)
+
+m4 <-gam(conidia ~  te(Tm, branches,k = 4) + rep, data = br_tm)
+summary(m4)
+plot(m4)
+unique(br_tm$Tm)
 ```
 
