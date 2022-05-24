@@ -336,100 +336,214 @@ br_tm_lng[, c("Tm", "branches", "rep") := list(Tm,
 
 Now we have prepared our data lets try it in our first model.  
 
-```{r}
+```{r m1}
 m1 <- polr(branches ~ Tm + rep, 
            data = br_tm_lng, 
            Hess = TRUE)
 
 summary(m1)
-
 ```
 
-Lets test the predictions by this model output something reasonable compared to the raw data.
+The output is in proportional log odds and presents *Coefficients* which represent
+the change in log odds for each unit of the predictor.
+For example for each degree temperature increases the log odds increases `r round(coef(m1)[1],3)`.  
 
-```{r}
-test_dat <- data.table(Tm = 5:40, 
-                       rep = as.factor(rbinom(length(5:40),1,0.5)+1))
+The coefficient `rep` is not significiant and can probably be dropped from the model.  
 
-m1_pred <- cbind(Tm = test_dat$Tm,
-                 round(predict(m1,
-                               test_dat[,1],
-                               type = "p"),
-                       3))
+Lets plot the model predictions for temperatures between 8$^\circ$ C and 35$^\circ$ C
+to determine if the result is reasonable compared to the raw data.  
 
-plot(m1_pred[,"Tm"], m1_pred[,"0"],
-     type = "l",
-     ylim = c(0,1))
-lines(m1_pred[,"Tm"], m1_pred[,"1"], col = "blue")
-lines(m1_pred[,"Tm"], m1_pred[,"2"], col = "red")
-lines(m1_pred[,"Tm"], m1_pred[,"3"], col = "green")
+```{r plot_m1}
+# Make a data.frame of test values to feed in the model
+test_dat <- data.table(Tm = 5:40, # between 5 and 8 degrees
+                       rep = as.factor(rbinom(length(5:40),1,0.5)+1)) # randomly use either the first or second rep
 
+# create a data.frame with predicted values and reference them to the respective temperature
+m1_pred <-
+   as.data.table(cbind(Tm = test_dat$Tm,
+                       round(predict(m1,
+                                     test_dat,
+                                     type = "p"),
+                             3)))
+
+# format to long 
+m1_pred <-
+   melt(
+      m1_pred,
+      id.vars = "Tm",
+      measure.vars = c("0", "1", "2", "3"),
+      variable.name = "branches",
+      value.name = "prob"
+   )
+
+m1_pred |>
+   ggplot(aes(Tm, prob, colour = branches))+
+   geom_line(size = 1)+
+   theme_minimal()
 ```
 
 The result is rather linear and predicts more branches at 40C when the raw data does not see any from 35C or presumably above.
 
-Lets try generating splines to our data and modelling again.
+Lets try applying some splines to temperature and dropping rep.  
 
 
-```{r}
+```{r m2}
 library(splines)
-br_tm_lng[, c("Tm1",
-              "Tm2") := .(ns(Tm, 
-                             Boundary.knots = c(8,35), 
-                             knots = 3)[,1],
-                          ns(Tm, 
-                             Boundary.knots = c(8,35), 
-                             knots = 3)[,2])]
+m2 <- polr(branches ~ bs(Tm,Boundary.knots = c(8,35)), 
+                         data = br_tm_lng, Hess = TRUE)
+summary(m2)
+```
+The residual deviance and AIC on this model is lower, indicating this might be a 
+better fit. 
+Also the t value is higher hinting this model shows clearer differences between 
+the variables.  
 
+Now lets try predicting from this model.  
 
-m2 <- polr(branches ~ Tm1+Tm2 + rep, data = br_tm_lng, Hess = TRUE)
-
-m3 <- polr(branches ~ bs(Tm,Boundary.knots = c(8,35)) + rep, 
-           data = br_tm_lng, 
-           Hess = TRUE)
-
-summary(m3)
+```{r pred_m2}
+m2_pred <- as.data.table(round(predict(m2,
+                         test_dat,
+                         type = "p"),
+                 3))[, Tm := test_dat$Tm]
 
 ```
-?Now lets try predicting from this model
+We get a warning indicating the the predicted values are outside the range of the 
+spline boundary knots. 
+This is ok as we know there should be a zero probability of spore germination outside 
+this temperature range of 8$^\circ$C and 35$^\circ$C
 
 ```{r}
-test_dat[, c("Tm1", "Tm2","Tm") :=
-            .(ns(Tm, Boundary.knots = c(8,35), 
-                             knots = 3)[,1],
-              ns(Tm, Boundary.knots = c(8,35), 
-                             knots = 3)[,2],
-              NULL)] 
+# format to long 
+m2_pred <-
+   melt(
+      m2_pred,
+      id.vars = "Tm",
+      measure.vars = c("0", "1", "2", "3"),
+      variable.name = "branches",
+      value.name = "prob"
+   )
 
-
-m2_pred <- round(predict(m2,
-                               test_dat,
-                               type = "p"),
-                       3)
-
-m3_pred <- predict(m3,test_dat, type = "p")
-
-plot(5:40, m3_pred[,"0"],
-     type = "l",
-     ylim = c(0,1))
-lines(5:40, m3_pred[,"1"], col = "blue")
-lines(5:40, m3_pred[,"2"], col = "red")
-lines(5:40, m3_pred[,"3"], col = "green")
-
-
+m2_pred |>
+   ggplot(aes(Tm, prob, colour = branches))+
+   geom_line(size = 1)+
+   theme_minimal()
 ```
 
-Maybe I will try a different angle of a gam with count data
+This plot looks like it would fit the raw data much better than `m1`.
+However, the model is more centered on 25$^\circ$C as the temperature producing the
+most germinated conidia with three germ-tubes.
+Lets see if we can improve the model by adding more knots.
 
-```{r}
-head(br_tm)
 
-m3 <-gam(conidia ~ ordered(branches)+ s(Tm,k = 5) + rep, data = br_tm)
+```{r m3}
+m3 <- polr(branches ~ bs(Tm,
+                         knots = c(19,23,27,30)), 
+                         data = br_tm_lng, Hess = TRUE)
 summary(m3)
+```
+The residual deviance and AIC on this model is lower, indicating this might be a 
+better fit. 
+Also the t value is higher hinting this model shows clearer differences between 
+the variables.  
 
-m4 <-gam(conidia ~  te(Tm, branches,k = 4) + rep, data = br_tm)
+Now lets try predicting from this model.  
+
+```{r pred_m3}
+m3_pred <- as.data.table(round(predict(m3,
+                         test_dat[,1],
+                         type = "p"),
+                 3))[, Tm := test_dat$Tm]
+
+```
+We get a warning indicating the the predicted values are outside the range of the 
+spline boundary knots. 
+This is ok as we know there should be a zero probability of spore germination outside 
+this temperature range of 8$^\circ$C and 35$^\circ$C
+
+```{r plot_m3}
+# format to long 
+m3_pred <-
+   melt(
+      m3_pred,
+      id.vars = "Tm",
+      measure.vars = c("0", "1", "2", "3"),
+      variable.name = "branches",
+      value.name = "prob"
+   )
+
+m3_pred |>
+   ggplot(aes(Tm, prob, colour = branches))+
+   geom_line(size = 1)+
+   theme_minimal()
+```
+
+The plot shows that this model might have too many spline knots. 
+Lets compare the mode using the `anova()` function.
+
+```{r anova_m3}
+anova(m2,m3)
+```
+While the anova says `m3` is a significantly better model, the residual deviance 
+informs us it is not by much. 
+Based on the plot we will try fewer knots to reduce the wiggliness
+
+
+```{r m4}
+m4 <- polr(branches ~ bs(Tm,
+                         knots = c(23,28)), 
+                         data = br_tm_lng, Hess = TRUE)
 summary(m4)
-plot(m4)
-unique(br_tm$Tm)
 ```
+The residual deviance and AIC on this model is lower, indicating this might be a 
+better fit. 
+Also the t value is higher hinting this model shows clearer differences between 
+the variables.  
+
+Now lets try predicting from this model.  
+
+```{r pred_m4}
+m4_pred <-
+   as.data.table(round(predict(m4,
+                               test_dat[, 1],
+                               type = "p",
+                               se.fit = TRUE),
+                       3))[, Tm := test_dat$Tm]
+
+```
+We get a warning indicating the the predicted values are outside the range of the 
+spline boundary knots. 
+This is ok as we know there should be a zero probability of spore germination outside 
+this temperature range of 8$^\circ$C and 35$^\circ$C
+
+```{r plot_m4}
+# format to long 
+m4_pred <-
+   melt(
+      m4_pred,
+      id.vars = "Tm",
+      measure.vars = c("0", "1", "2", "3"),
+      variable.name = "branches",
+      value.name = "prob"
+   )
+
+m4_pred |>
+   ggplot(aes(Tm, prob, colour = branches))+
+   geom_line(size = 1)+
+   theme_minimal()+
+   geom_vline(aes(xintercept = 28), linetype = 2)+
+   annotate(geom = "text",
+            x = 29,
+            y = 0.9,
+            label = 28)
+```
+
+The plot shows a smoother fit with the knots we have tried. 
+Lets compare the model using the `anova()` function.
+
+```{r anova_m3}
+anova(m3,m4)
+```
+While the anova says `m3` is a significantly better model, the residual deviance 
+informs us it is not by much. 
+Based on the plot we will try fewer knots to reduce the wiggliness
 
