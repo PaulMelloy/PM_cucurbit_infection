@@ -1,0 +1,222 @@
+---
+title: "Untitled"
+description: |
+  A new article created using the Distill format.
+author:
+  - name: Paul Melloy 
+    url: https://PaulMelloy.github.io
+    affiliation: The University of Queensland
+    affiliation_url: https://uq.edu.au
+date: "`r Sys.Date()`"
+output: distill::distill_article
+---
+
+
+Load R libraries required for analysis
+
+```{r load_libraries, warning=FALSE, message=FALSE}
+library(data.table) # data structure, cleaning and formatting
+library(mgcv) # gam statistical models
+library(rstanarm) # Bayesian statistical models
+library(lme4) # Linear mixed effect modelling
+library(ggplot2) # graphing
+library(MASS) # logistical ordinal regression functions, among other things
+```
+<br>  
+
+Read in data
+
+```{r import_data}
+g_vpd <- fread("cache/germination_vpd.csv")
+```
+
+
+
+<br>  
+<br>  
+
+## Impact of Temperature on *P. xanthii* germination  
+Peek at the data
+
+```{r data_peek}
+head(g_vpd)
+str(g_vpd)
+```
+<br>  
+### Visualise the raw data  
+Let's plot the data over time, we will need to omit temperatures 8 and 35 where
+no germination was observed.
+
+### Visualise the raw data  
+Let's plot the data over time  
+
+```{r plot_raw_timexRH}
+g_vpd |>
+   ggplot(aes(x = i_period, y = germ_n, colour = as.factor(Tm))) + 
+   geom_point()+
+   facet_wrap(facets = "RH")+
+   geom_smooth(method = "gam",formula = y ~ s(x, k = 3))+
+   scale_color_viridis_d()+
+   xlab("Time in hours")+
+   ylab("Germinated conidia (%)")+
+   labs(colour = "Temperature")+
+   theme_classic() +
+   ggtitle("Germinated conidia over time, subset by relative humidity")
+   # scale_x_continuous(limits = c(12,48), breaks = c(12,18,24,30,36,42,48))++
+   # scale_y_continuous(limits = c(0,100), n.breaks = 5)
+   
+```
+
+
+
+```{r plot_raw_timexVPD}
+i_p_labs <-c("12 hours","24 hours","36 hours","48 hours")
+names(i_p_labs) <- c(12,24,36,48)
+g_vpd |>
+   ggplot(aes(x = vpd, y = germ_n, colour = as.factor(Tm))) + 
+   geom_point()+
+   facet_wrap(facets = c("i_period"), 
+              labeller = labeller(i_period = i_p_labs))+
+   geom_smooth(method = "gam",formula = y ~ s(x,k=5), se = FALSE)+
+   scale_color_viridis_d()+
+   xlab("VPD")+
+   ylab("Germinated conidia (%)")+
+   labs(colour = "Temperature")+
+   theme_classic()
+
+```
+
+This data is very hard to fit a curve to and seems like it would benefit with two functions.
+Lets plot again without the saturated 99% humidity treatment
+```{r plot_subset_rh}
+i_p_labs <-c("12 hours","24 hours","36 hours","48 hours")
+names(i_p_labs) <- c(12,24,36,48)
+g_vpd[g_vpd$RH != 99] |>
+   ggplot(aes(x = vpd, y = germ_n, colour = as.factor(Tm))) + 
+   geom_point()+
+   facet_wrap(facets = c("i_period"), 
+              labeller = labeller(i_period = i_p_labs))+
+   geom_smooth(method = "gam",formula = y ~ s(x,k=5), se = FALSE)+
+   scale_color_viridis_d()+
+   xlab("VPD")+
+   ylab("Germinated conidia (%)")+
+   labs(colour = "Temperature")+
+   theme_classic()
+```
+
+From these plots it seems that the influence of VPD on germination is bimodal, with an increase in germination between 1.5 and 2 kPa. 
+Particularly in the warmer treatments
+
+### VPD influence on germination - analysis
+```{r m1v}
+m1v <- gam(cbind(germ_n,non_germ_n) ~ s(vpd, k = 5) + s(Tm, k = 3) + s(i_period, k = 3), 
+           data = g_vpd,
+           family = "binomial")
+summary(m1v)
+plot(m1v)
+vis.gam(m1v)
+```
+
+As earlier, lets try and reduce the wiggliness by using P-splines  
+
+```{r m2v}
+m2v <- gam(cbind(germ_n,non_germ_n) ~ s(vpd, k = 5, bs = "ps") + s(Tm, k = 3) + s(i_period, k = 3), 
+           data = g_vpd,
+           family = "binomial")
+summary(m2v)
+plot(m2v)
+vis.gam(m2v,
+        phi = 20,
+        theta = 45)
+```
+
+There is a better fit and a decreasing trend in the vpd plot.  
+
+Next lets try more vpd knots
+
+```{r m3v}
+m3v <- gam(cbind(germ_n,non_germ_n) ~ s(vpd, k = 8, bs = "ps") + s(Tm, k = 3) + s(i_period, k = 3), 
+           data = g_vpd,
+           family = "binomial")
+summary(m3v)
+plot(m3v)
+vis.gam(m3v,
+        phi = 20,
+        theta = 45)
+par(mfrow = c(2,2),
+    oma = c(0,0,0,0),
+    mar = c(0.1,0.1,0.1,0.1))
+vis.gam(m3v,
+        phi = 20,
+        theta = 45,
+        view = c("vpd","Tm"),
+        cond = list(i_period = 12))
+vis.gam(m3v,
+        phi = 20,
+        theta = 45,
+        view = c("vpd","Tm"),
+        cond = list(i_period = 24))
+vis.gam(m3v,
+        phi = 20,
+        theta = 45,
+        view = c("vpd","Tm"),
+        cond = list(i_period = 36))
+vis.gam(m3v,
+        phi = 20,
+        theta = 45,
+        view = c("vpd","Tm"),
+        cond = list(i_period = 48))
+
+par(mfrow = c(1,1))
+```
+
+While there exists a lot of wiggliness in the gam, the vpd plot shows the increase in germination in at around 1.5 kPa and the rapid decrease in germination between the saturated treatments (0.026 - 0.038 kPa) and the next highest humidity (0.158 - 0.189 kpa).
+This model also provides a high R-squared (`r round(summary(m3v)$r.sq,4)`), low UBRE `r round(m3v$gcv.ubre,3)`, indicating good predictive ability
+and less affected by drop one, tests.
+
+```{r}
+anova(m2v,m3v)
+AIC(m1v,m2v,m3v)
+```
+
+
+
+
+## Baysian approach  
+
+```{r install_stan}
+#install.packages("rstanarm")
+library(rstanarm)
+library(bayesplot)
+```
+
+```{r}
+fit1 <- stan_gamm4(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k = 3) + s(Tm, k = 6, bs = "ps"), 
+                   data = g_tm, family = "binomial", chains = 1)
+
+plot_nonlinear(fit1)
+
+m5 <- gam(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k=3) + s(Tm, k =4, bs = "ps"),
+          data = g_tm,
+          family = "binomial",
+)
+
+prior_summary(fit1)
+summary(fit1)
+mcmc_areas(as.matrix(fit1),
+           pars = "Tm",
+           prob = 0.95)
+pp_check(fit1,"stat")
+```
+
+
+```{r}
+g_vpd %>%
+  mutate(germ = germ_n/(non_germ_n + germ_n)) %>%
+  group_by(vpd,i_period) %>%
+  summarise(m_germ = mean(germ),
+            Tm= unique(Tm)) %>%
+   filter(i_period == 12 &
+             vpd > 0.13) %>%
+   summary()
+```
