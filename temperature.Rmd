@@ -24,6 +24,8 @@ library(MASS) # logistical ordinal regression functions, among other things
 ```
 <br>  
 
+Read in data
+
 ```{r import_data}
 g_tm <- fread("cache/germination_temperature.csv")
 br_tm <- fread("cache/branching_temperature.csv")
@@ -65,19 +67,19 @@ g_tm[Tm != 8 &
 Now lets plot germination over temperature separating by infection period.  
 
 ```{r plot_raw_Tm}
-g_tm |>
+g_tm[Tm != 8 &
+        Tm != 35,] |>
    ggplot(aes(x = Tm, y = germ_conidia, colour = as.factor(i_period))) + 
    geom_point()+
-   geom_smooth(method = "gam",formula = y ~ s(x, k = 3), se =FALSE)+
+   geom_smooth(method = "gam",formula = y ~ s(x, k = 6))+
    scale_color_viridis_d()+
    xlab("Temperature")+
    ylab("Germinated conidia (%)")+
    labs(colour = "Time (h)")+
    theme_classic()+
-   #scale_x_continuous(limits = c(12,48), breaks = c(12,18,24,30,36,42,48))+
+   scale_x_continuous(breaks = c(18,21,24,27,30))+
    scale_y_continuous(limits = c(0,100), n.breaks = 5)
 ```
-Splines fit with four knots.  
 
 These plot shows that the optimum temperature for rapid *P. xanthii* germination 
 is around 28C. 
@@ -117,7 +119,7 @@ Model two we will investigate whether there is an interaction between temperatur
 and infection period.  
 
 ```{r model_2}
-m2 <- gam(cbind(germ_conidia, non_germ_conidia) ~ te(i_period, Tm, k = 4),
+m2 <- gam(cbind(germ_conidia, non_germ_conidia) ~ te(i_period, Tm, k = 5),
           data = g_tm,
           family = "binomial")
 summary(m2)
@@ -127,6 +129,7 @@ vis.gam(m2,
         phi = 30, # vertical rotation
         n.grid = max(g_tm$Tm) - min(g_tm$Tm) # grid cells
         )
+
 ```
 This model shows slightly higher R squared and 'explained deviance' values, with 
 a lower UBRE  value indicating that model two (`m2`) is the better model.  
@@ -255,7 +258,7 @@ and less affected by drop one, tests.
 
 Peek at the data  
 
-```{r data_peek}
+```{r br_data_peek}
 head(br_tm)
 str(br_tm)
 summary(br_tm)
@@ -275,7 +278,7 @@ recorded.
 ### Visualise the raw data  
 Let's plot the data over time  
 
-```{r plot_raw_time}
+```{r plot_raw_br}
 br_tm |>
    ggplot(aes( x = as.factor(Tm), y = conidia/2 , fill = as.factor(branches))) + 
    geom_col(position = position_stack(reverse = TRUE))+
@@ -355,8 +358,8 @@ to determine if the result is reasonable compared to the raw data.
 
 ```{r plot_m1}
 # Make a data.frame of test values to feed in the model
-test_dat <- data.table(Tm = 5:40, # between 5 and 8 degrees
-                       rep = as.factor(rbinom(length(5:40),1,0.5)+1)) # randomly use either the first or second rep
+test_dat <- data.table(Tm = seq(from = 5, to = 40, by = 0.1), # between 5 and 8 degrees
+                       rep = as.factor(rbinom(length(seq(from = 5, to = 40, by = 0.1)),1,0.5)+1)) # randomly use either the first or second rep
 
 # create a data.frame with predicted values and reference them to the respective temperature
 m1_pred <-
@@ -480,7 +483,7 @@ m3_pred |>
 The plot shows that this model might have too many spline knots. 
 Lets compare the mode using the `anova()` function.
 
-```{r anova_m3}
+```{r anova_m2-3}
 anova(m2,m3)
 ```
 While the anova says `m3` is a significantly better model, the residual deviance 
@@ -490,7 +493,8 @@ Based on the plot we will try fewer knots to reduce the wiggliness
 
 ```{r m4}
 m4 <- polr(branches ~ bs(Tm,
-                         knots = c(23,28)), 
+                         knots = c(23,28)
+                         ), 
                          data = br_tm_lng, Hess = TRUE)
 summary(m4)
 ```
@@ -540,10 +544,75 @@ m4_pred |>
 The plot shows a smoother fit with the knots we have tried. 
 Lets compare the model using the `anova()` function.
 
-```{r anova_m3}
+```{r anova_m3-4}
 anova(m3,m4)
 ```
 While the anova says `m3` is a significantly better model, the residual deviance 
 informs us it is not by much. 
-Based on the plot we will try fewer knots to reduce the wiggliness
+Because the plot of `m4` seems a more reasonable fit to the data, we will use this.  
+
+Lets examine the coefficients.  
+
+```{r m4_coef}
+coef(m4)
+```
+There are five cooeficients for the Temperature variable because the b-spline breaks
+the data into different ranges depending on `knot` placement. 
+Here we see there are four knots
+
+```{r}
+tm_bs <- bs(br_tm_lng$Tm, knots = c(23,28))
+sort(c(attr(tm_bs, which = "knots"),
+  attr(tm_bs, which = "Boundary.knots")))
+```
+As can be seen in the summary above it is a little hard to make sense of these values. 
+The spline breaks up the temperature predictor into five predictors, each explaining 
+the difference between temperatures for a particular range.
+The value gives us a scaled representation of the mean magnitude of each temperature
+range, and therefore the only inference we can make from these values is some are 
+greater some are less and some have a large negative influence on spore germination
+state.  
+
+So for temperatures < 8$^\circ$C the coefficient was `r coef(m4)[1]`, with a low t-value
+indicating little difference between the number of conidial germ-tubes at temperature
+treatments in this range.
+For temperatures 8$^\circ$C < `Tm` < 23$^\circ$C the coefficient was `r coef(m4)[2]`, 
+with a t-value greater than 2 indicating a likely significant difference between the
+proportions of conidia with varying numbers of germ-tubes due to temperatures in 
+this range.  
+
+For temperatures 23$^\circ$C < `Tm` < 28$^\circ$C the coefficient was `r coef(m4)[3]`, 
+with a t-value greater than 2 indicating a likely significant difference between the
+proportions of conidia with varying numbers of germ-tubes due to temperatures in 
+this range.  
+
+For temperatures 28$^\circ$C < `Tm` < 35$^\circ$C the coefficient was `r coef(m4)[4]`, 
+with a t-value greater than 2 indicating a likely significant difference between the
+proportions of conidia with varying numbers of germ-tubes due to temperatures in 
+this range.
+
+For temperatures 35$^\circ$C < `Tm`  the coefficient was `r coef(m4)[5]`, 
+with a t-value less than -2 indicating a likely significant difference and negative 
+association between the proportions of conidia with varying numbers of germ-tubes 
+due to temperatures in this range.
+
+
+If we take the exponent of the coefficients, we will obtain the *odd ratio* which 
+is more easily interpreted.  
+
+```{r}
+round(
+   exp(coef(m4)),
+   3)
+```
+The odds ratio still does not make much sense, given that an odds ratio of 1, means 
+no change and an odds ratio of 2 is twice as likely.
+An odds ratio of 11.6 indicates 11.6/1 times more likely with each degree increase
+a spore will develop another germ-tube. 
+This seems excessive, because it is.
+We still need to back-transform the splines, prior to taking the exponent.  
+
+
+$\frac{t}{13.3}I(0<=t<13.3)+\frac{38.83333-t}{38.83333-13.3}I(13.3<=t<38.83333)$
+
 
