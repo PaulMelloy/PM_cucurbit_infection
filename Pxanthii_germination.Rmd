@@ -5,6 +5,7 @@ description: |
   in cucurbits
 author:
   - name: Paul Melloy 
+    url: https://PaulMelloy.github.io
     affiliation: The University of Queensland
     affiliation_url: https://uq.edu.au
 date: "`r Sys.Date()`"
