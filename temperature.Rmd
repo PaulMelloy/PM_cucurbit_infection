@@ -29,6 +29,7 @@ Read in data
 ```{r import_data}
 g_tm <- fread("cache/germination_temperature.csv")
 br_tm <- fread("cache/branching_temperature.csv")
+br_tm2 <- fread("cache/Tm_branches.csv")
 ```
 
 
