@@ -177,8 +177,16 @@ and less affected by drop one, tests.
 
 
 ```{r}
+m4v <- gam(cbind(germ_n,non_germ_n) ~ s(vpd, k = 7, bs = "ps") + s(Tm, k = 3) + i_period, 
+           data = g_vpd,
+           family = "binomial")
+```
+
+
+```{r}
 anova(m2v,m3v)
-AIC(m1v,m2v,m3v)
+anova(m3v,m4v)
+AIC(m1v,m2v,m3v, m4v)
 ```
 
 
@@ -186,7 +194,7 @@ AIC(m1v,m2v,m3v)
 
 Import the clean data
 
-```{r import_data}
+```{r import_data_br}
 # Read clean data
 b_vpd <- fread("cache/branching_vpd.csv")[, exp := 1]
 b_vpd2 <- fread("cache/branching_VPD2.csv")[,exp := 2]
@@ -205,7 +213,7 @@ summary(b_vpd3)
 ## Impact of Temperature on *P. xanthii* germination  
 Peek at the data
 
-```{r data_peek}
+```{r data_peek_br}
 str(b_vpd)
 str(b_vpd2)
 str(b_vpd3)
@@ -371,9 +379,11 @@ and infection period.
 
 ```{r model_2}
 
-m2 <- polr(branches ~ bs(vpd, Boundary.knots = c(0.02,0.8)) + Tm+exp, data = b_vpd_lng, Hess = TRUE)
-
+m2 <- polr(branches ~ bs(vpd) + Tm+exp, data = b_vpd_lng, Hess = TRUE)
+unique(b_vpd[,RH])
 summary(m2)
+summary(m3)
+anova(m2,m3)
 ```
 This model shows slightly higher R squared and 'explained deviance' values, with 
 a lower UBRE  value indicating that model two (`m2`) is the better model.  
@@ -433,7 +443,7 @@ library(rstanarm)
 library(bayesplot)
 ```
 
-```{r}
+```{r, include=FALSE}
 fit1 <- stan_gamm4(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k = 3) + s(Tm, k = 6, bs = "ps"), 
                    data = g_tm, family = "binomial", chains = 1)
 
@@ -453,7 +463,7 @@ pp_check(fit1,"stat")
 ```
 
 
-```{r}
+```{r, include=FALSE}
 g_vpd %>%
   mutate(germ = germ_n/(non_germ_n + germ_n)) %>%
   group_by(vpd,i_period) %>%
