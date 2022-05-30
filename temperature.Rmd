@@ -123,7 +123,7 @@ Model two we will investigate whether there is an interaction between temperatur
 and infection period.  
 
 ```{r model_2}
-m2 <- gam(cbind(germ_conidia, non_germ_conidia) ~ te(i_period, Tm, k = 5),
+m2 <- gam(cbind(germ_conidia, non_germ_conidia) ~ te(i_period, Tm, k = 4),
           data = g_tm[Tm != 8 & Tm != 35,],
           family = "binomial")
 summary(m2)
