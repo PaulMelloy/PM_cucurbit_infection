@@ -403,9 +403,9 @@ library(bayesplot)
 
 ```{r}
 fit1 <- stan_gamm4(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k = 3) + s(Tm, k = 6, bs = "ps"), 
-                   data = g_tm, family = "binomial", chains = 1)
+                   data = g_tm, family = "binomial", chains = 2)
 
-plot_nonlinear(fit1)
+plot_nonlinear(fit1,)
 
 m5 <- gam(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k=3) + s(Tm, k =4, bs = "ps"),
           data = g_tm,
@@ -418,6 +418,11 @@ mcmc_areas(as.matrix(fit1),
            pars = "Tm",
            prob = 0.95)
 pp_check(fit1,"stat")
+
+tab1 <- data.frame(Tm = 1:36, i_period = 36)
+PPD <- posterior_predict(fit1) # uses esoph
+probs <- t(apply(PPD, MARGIN = 2, FUN = table) / nrow(PPD))
+table(PPD[,50])/2000
 ```
 
 
