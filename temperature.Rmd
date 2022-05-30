@@ -99,13 +99,16 @@ that may or may not interact with infection period.
 Germination is a binomial response so we need to provide the number of germinated 
 to the number of non-germinated.
 In the first model we will fit a smooth spline to each predictor and specify that each 
-predictor influences germination independently of the other.
+predictor influences germination independently of the other. 
+I have excluded temperature treatments 8$^\circ$C and 35$^\circ$C because the zero germination
+and zero variation can cause issues. 
+Instead we will clearly state there is no germination outside this temperature range.
 I have used only 2 and 4 basis spline 'knots' for infection period and temperature
 respectively.  
 
 ```{r model_1}
 m1 <- gam(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k=3) + s(Tm, k =4), 
-          data = g_tm,
+          data = g_tm[Tm != 8 & Tm != 35,],
           family = "binomial")
 summary(m1)
 plot(m1)
@@ -121,7 +124,7 @@ and infection period.
 
 ```{r model_2}
 m2 <- gam(cbind(germ_conidia, non_germ_conidia) ~ te(i_period, Tm, k = 5),
-          data = g_tm,
+          data = g_tm[Tm != 8 & Tm != 35,],
           family = "binomial")
 summary(m2)
 plot(m2)
@@ -156,7 +159,7 @@ Lets try p splines to see if we can improve the fit.
 
 ```{r model_3}
 m3 <- gam(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k=3) + s(Tm, k =4, bs = "ps"),
-          data = g_tm,
+          data = g_tm[Tm != 8 & Tm != 35,],
           family = "binomial")
 summary(m3)
 plot(m3)
@@ -186,7 +189,7 @@ Next lets see if cyclic versions of the p-splines `"cp"` improve this fit furthe
 
 ```{r model_4}
 m4 <- gam(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k=3) + s(Tm, k =4, bs = "cp"),
-          data = g_tm,
+          data = g_tm[Tm != 8 & Tm != 35,],
           family = "binomial")
 summary(m4)
 plot(m4)
@@ -219,7 +222,7 @@ in attempt to get a better fit to the raw data.
 
 ```{r model_5}
 m5 <- gam(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k=3) + s(Tm, k =6, bs = "ps"),
-          data = g_tm,
+          data = g_tm[Tm != 8 & Tm != 35,],
           family = "binomial")
 summary(m5)
 plot(m5)
@@ -557,9 +560,9 @@ Lets examine the coefficients.
 ```{r m4_coef}
 coef(m4)
 ```
-There are five cooeficients for the Temperature variable because the b-spline breaks
+There are five coefficients for the Temperature variable because the b-spline breaks
 the data into different ranges depending on `knot` placement. 
-Here we see there are four knots
+Here we see there are four knots at the following temperatures
 
 ```{r}
 tm_bs <- bs(br_tm_lng$Tm, knots = c(23,28))
@@ -570,48 +573,56 @@ As can be seen in the summary above it is a little hard to make sense of these v
 The spline breaks up the temperature predictor into five predictors, each explaining 
 the difference between temperatures for a particular range.
 The value gives us a scaled representation of the mean magnitude of each temperature
-range, and therefore the only inference we can make from these values is some are 
+range on a log odds scale, and therefore the only inference we can make from these values is some are 
 greater some are less and some have a large negative influence on spore germination
 state.  
 
-So for temperatures < 8$^\circ$C the coefficient was `r coef(m4)[1]`, with a low t-value
-indicating little difference between the number of conidial germ-tubes at temperature
-treatments in this range.
+The significance of each predictor can be observed by the standard error or the 
+'t value' $t value = \frac{coef}{se}$. 
+We can also obtain P-values from this output, however these methods
+are not advised given they assume a normal distribution and infinite degrees of freedom.  
+
+```{r m4_coefTab}
+# get table of coefficients
+coef_table <- data.table(coef(summary(m4)), keep.rownames = TRUE)
+
+# calculate p-values
+coef_table[, p_value := pnorm(abs(`t value`),lower.tail = FALSE) *2]
+coef_table
+```
+
+Perhaps a better method for inferring statistical significance is to consider the 
+confidence intervals and if the CI includes zero.  
+
+```{r m4_confit}
+m4_ci <- confint(m4)
+m4_ci
+```
+
+So for temperatures < 8$^\circ$C the coefficient was `r coef(m4)[1]`, with CIs that 
+include zero indicating little difference between the number of conidial germ-tubes 
+at temperature treatments in this range.  
+
 For temperatures 8$^\circ$C < `Tm` < 23$^\circ$C the coefficient was `r coef(m4)[2]`, 
-with a t-value greater than 2 indicating a likely significant difference between the
+with CIs that _don't_ include zero indicating a likely significant difference between the
 proportions of conidia with varying numbers of germ-tubes due to temperatures in 
 this range.  
 
 For temperatures 23$^\circ$C < `Tm` < 28$^\circ$C the coefficient was `r coef(m4)[3]`, 
-with a t-value greater than 2 indicating a likely significant difference between the
+with CIs that _don't_ include zero indicating a likely significant difference between the
 proportions of conidia with varying numbers of germ-tubes due to temperatures in 
 this range.  
 
 For temperatures 28$^\circ$C < `Tm` < 35$^\circ$C the coefficient was `r coef(m4)[4]`, 
-with a t-value greater than 2 indicating a likely significant difference between the
+with CIs that _don't_ include zero indicating a likely significant difference between the
 proportions of conidia with varying numbers of germ-tubes due to temperatures in 
 this range.
 
 For temperatures 35$^\circ$C < `Tm`  the coefficient was `r coef(m4)[5]`, 
-with a t-value less than -2 indicating a likely significant difference and negative 
+with CIs that _don't_ include zero indicating a likely significant difference and negative 
 association between the proportions of conidia with varying numbers of germ-tubes 
-due to temperatures in this range.
+due to temperatures in this range.  
 
-
-If we take the exponent of the coefficients, we will obtain the *odd ratio* which 
-is more easily interpreted.  
-
-```{r}
-round(
-   exp(coef(m4)),
-   3)
-```
-The odds ratio still does not make much sense, given that an odds ratio of 1, means 
-no change and an odds ratio of 2 is twice as likely.
-An odds ratio of 11.6 indicates 11.6/1 times more likely with each degree increase
-a spore will develop another germ-tube. 
-This seems excessive, because it is.
-We still need to back-transform the splines, prior to taking the exponent.  
 
 
 $\frac{t}{13.3}I(0<=t<13.3)+\frac{38.83333-t}{38.83333-13.3}I(13.3<=t<38.83333)$
