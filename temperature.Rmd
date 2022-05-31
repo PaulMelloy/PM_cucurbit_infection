@@ -309,7 +309,6 @@ and less affected by drop one, tests.
 
 ```{r read_brTm_data}
 br_tm <- fread("cache/branching_temperature.csv")
-br_tm2 <- fread("cache/Tm_branches.csv")
 ```
 
 
