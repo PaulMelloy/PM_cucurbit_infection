@@ -1,8 +1,8 @@
 ---
-title: "The effect of temperature on Podosphera xanthii germination and branching"
+title: "The effect of temperature on *Podosphera xanthii* germination and branching"
 description: |
   The statistical method undertaken in analysing the effect of temperature on 
-  the germination and branching of  _P. xanthii_.  
+  _P. xanthii_ germination and germ-tube production.  
 author:
   - name: Paul Melloy
     url: https://PaulMelloy.github.io
@@ -18,7 +18,6 @@ Load R libraries required for analysis
 library(data.table) # data structure, cleaning and formatting
 library(mgcv) # gam statistical models
 library(rstanarm) # Bayesian statistical models
-library(lme4) # Linear mixed effect modelling
 library(ggplot2) # graphing
 library(MASS) # logistical ordinal regression functions, among other things
 ```
@@ -28,8 +27,6 @@ Read in data
 
 ```{r import_data}
 g_tm <- fread("cache/germination_temperature.csv")
-br_tm <- fread("cache/branching_temperature.csv")
-br_tm2 <- fread("cache/Tm_branches.csv")
 ```
 
 
@@ -38,7 +35,19 @@ br_tm2 <- fread("cache/Tm_branches.csv")
 <br>  
 
 ## Impact of Temperature on *P. xanthii* germination  
-Peek at the data
+Peek at the data  
+
+Insert table of treatments reps and standard errors of raw data here.  
+
+```{r saveFig1, eval=FALSE, include=FALSE}
+# Save table as a word document
+doc <- officer::read_docx()
+doc <- body_add_flextable(doc, value = Sev_yield_table)
+#doc <- officer::body_end_section_landscape(doc)
+print(doc, target = "paper/figures/Severity&yield_SummaryTable.docx")
+```
+
+
 
 ```{r data_peek}
 head(g_tm)
@@ -56,7 +65,6 @@ length(unique(g_tm$Tm)) *           # Temperature incubators
 Add the number of leaves sampled at 36 hours to count germ-tube branching.  
 
 ```{r}
-br_tm
 length(unique(br_tm$Tm)) *           # Temperature incubators
    length(unique(br_tm$rep))       # Reps or individual leaves?
 ```
@@ -86,18 +94,39 @@ g_tm[Tm != 8 &
 Now lets plot germination over temperature separating by infection period.  
 
 ```{r plot_raw_Tm}
-g_tm[Tm != 8 &
-        Tm != 35,] |>
+g_tm[Tm == 8 |
+        Tm == 35, germ_conidia := rbinom(32,1,0.5)]
+Figure_2a <- 
+   g_tm |>
    ggplot(aes(x = Tm, y = germ_conidia, colour = as.factor(i_period))) + 
    geom_point()+
-   geom_smooth(method = "gam",formula = y ~ s(x, k = 6))+
+   geom_smooth(method = "gam",formula = y ~ s(x, k = 8), alpha = 0.2)+
    scale_color_viridis_d()+
-   xlab("Temperature")+
+   xlab(expression("Temperature " ( degree*C)))+
    ylab("Germinated conidia (%)")+
    labs(colour = "Time (h)")+
    theme_classic()+
-   scale_x_continuous(breaks = c(18,21,24,27,30))+
-   scale_y_continuous(limits = c(0,100), n.breaks = 5)
+   scale_x_continuous(breaks = seq(5,35,5))+
+   scale_y_continuous(limits = c(0,100), n.breaks = 5)+
+   annotate("text", x = 8, y = 100, label = "(a)")
+
+# Save figure
+
+Figure_2a
+```
+
+
+```{r saveFig2a, eval=FALSE, include=FALSE}
+# Save table as a word document
+ggsave(
+   filename = "FiguresTables/Fig2a_TemperatureGermination.tiff",
+   plot = Figure_2a,
+   device = "tiff",
+   height = 6,
+   width = 7,
+   dpi = 300,
+   units = "in"
+)
 ```
 
 These plot shows that the optimum temperature for rapid *P. xanthii* germination 
@@ -278,6 +307,12 @@ and less affected by drop one, tests.
 
 ## Temperature effect on germtube branching  
 
+```{r read_brTm_data}
+br_tm <- fread("cache/branching_temperature.csv")
+br_tm2 <- fread("cache/Tm_branches.csv")
+```
+
+
 Peek at the data  
 
 ```{r br_data_peek}
@@ -301,15 +336,35 @@ recorded.
 Let's plot the data over time  
 
 ```{r plot_raw_br}
-br_tm |>
-   ggplot(aes( x = as.factor(Tm), y = conidia/2 , fill = as.factor(branches))) + 
+Figure_2b <-
+   br_tm |>
+   ggplot(aes( x = as.factor(Tm), y = conidia/2 , fill = factor(branches,levels = c(1,2,3,0)))) + 
    geom_col(position = position_stack(reverse = TRUE))+
-   scale_fill_brewer(palette = "Blues", name = "Germ tube/\nbranches")+
-   xlab("Temperature")+
-   ylab("Conidia")+
+   scale_fill_manual(values = c("0" = "#eff3ff",
+                                "1" = "#bdd7e7",
+                                "2" = "#6baed6",
+                                "3" = "#2171b5"), 
+                     name = "Germ tubes")+
+   xlab(expression("Temperature " ( degree*C)))+
+   ylab("Germ tube production (%)")+
    labs(colour = "Germ tubes")+
-   theme_classic()
-   
+   theme_classic()+
+   annotate("text", x = 0.8, y = 99, label = "(b)")
+
+Figure_2b   
+```
+
+```{r saveFig2b, eval=FALSE, include=FALSE}
+# Save table as a word document
+ggsave(
+   filename = "FiguresTables/Fig2b_TemperatureGermtube.tiff",
+   plot = Figure_2b,
+   device = "tiff",
+   height = 6,
+   width = 7,
+   dpi = 300,
+   units = "in"
+)
 ```
 
 This plot shows that the optimum temperature for rapid *P. xanthii* germination 
