@@ -20,6 +20,7 @@ library(mgcv) # gam statistical models
 library(rstanarm) # Bayesian statistical models
 library(ggplot2) # graphing
 library(MASS) # logistical ordinal regression functions, among other things
+source("R/p_star.R")
 ```
 <br>  
 
@@ -60,13 +61,6 @@ How many leaves were inoculated?
 length(unique(g_tm$Tm)) *           # Temperature incubators
    length(unique(g_tm$leaf)) *      # individual leaves
    length(unique(g_tm$i_period))    # Sampling times
-```
-
-Add the number of leaves sampled at 36 hours to count germ-tube branching.  
-
-```{r}
-length(unique(br_tm$Tm)) *           # Temperature incubators
-   length(unique(br_tm$rep))       # Reps or individual leaves?
 ```
 
 
@@ -305,7 +299,9 @@ and less affected by drop one, tests.
 
 ***  
 
-## Temperature effect on germtube branching  
+## Temperature effect on germ tube production  
+
+Import cleaned data.  
 
 ```{r read_brTm_data}
 br_tm <- fread("cache/branching_temperature.csv")
@@ -320,19 +316,22 @@ str(br_tm)
 summary(br_tm)
 ```
 
-This experiment used the same leaves as the germination experiment which were incubated
-for 36 hours. 
+This experiment used the incubation conditions as the germination experiment, and were
+which were incubated for 36 hours. 
 Following 36 hours of incubation at each respective temperatures, four leaf discs
 were removed from the growth chamber and sticky tape used to make a slide of the conidia
 from the surface of the leaf. 
 Two additional leaf discs were removed from the same chamber at the same time, stained 
 and fixed for microscopy using the leaf clearing method, described by Jose Liberato. 
-One hundred conidia were selected at random and the state of germination or branching
-recorded.
+One hundred conidia were selected at random and the state of germination or germ tube
+production recorded.
 
 <br>  
 ### Visualise the raw data  
-Let's plot the data over time  
+
+Let's plot the number of germ tubes for each temperature treatment. 
+We can use stacked bars to show not only the number of germ tubes, but visually represent
+the number of conidia with two or less germ tubes ect.  
 
 ```{r plot_raw_br}
 Figure_2b <-
@@ -367,12 +366,28 @@ ggsave(
 ```
 
 This plot shows that the optimum temperature for rapid *P. xanthii* germination 
-is around 28C. 
+is around 28$^\circ$C with `r br_tm[branches == 3 & Tm == 28, sum(conidia)]/2` % of 
+conidia presenting three or more germ tubes. 
+25$^\circ$C and 22$^\circ$C presented `r br_tm[branches == 3 & Tm == 25, sum(conidia)]/2` and 
+`r br_tm[branches == 3 & Tm == 22, sum(conidia)]/2` % respectively.
+Although there were only fewer conidia with tertiary germtubes in the 22°C treatment,
+combined means of conidia with two or more germtubes were 
+`r br_tm[branches >= 2 & Tm == 22, sum(conidia)]/2`,
+`r br_tm[branches >= 2 & Tm == 25, sum(conidia)]/2`, and 
+`r br_tm[branches >= 2 & Tm == 28, sum(conidia)]/2` in temperature treatments 
+22$^\circ$C, 25$^\circ$C, and 28$^\circ$C.
+Only `r br_tm[branches == 3 & Tm == 19, sum(conidia)]/2`% of germinated conidia 
+had produced tertiary germ at the 19$^\circ$C, with 
+`r br_tm[branches >= 3 & Tm == 17, sum(conidia)]/2` tertiary germ tubes observed 
+at 17$^\circ$C and 31$^\circ$C. 
+
 Also, no germination occurs at temperatures 8$^\circ$C or less, and over 35$^\circ$C.
 
-Lets build a model to help us predict what state a conidia will be in, after 36 
+Lets build a model to help us predict germ tube production after 36 
 hours when incubated at each respective temperature.
 
+Trecate (2019) claims if there are more than 2 germ tubes successful infection is 
+likely to have occured.
 Here we have a response variable, `branches` which describes the progress of a potential
 infection by a single conidia.  
    - `0` which represents a non-germinated conidia,  
@@ -380,21 +395,19 @@ infection by a single conidia.
    - `2` a germinated conidia with two germ tubes,  
    - `3` a germinated conidia with three or more germ tubes.  
    
-The response variable is might be thought of as continuous. 
-However the given our aim is to estimate the survival of conidia on a cucurbit leaf,
-and if successful infection might occur estimating the number of branched hyphae 
-beyond three is meaningless, given Trecate (2019) assumes successful infection of
-a host cell if there are more than 2 germ tubes.
+The response variable might be thought of as continuous. 
+However, given our aim is to estimate successful infection by the pathogen by proxy 
+of germ tube production, estimating the number of germ tubes and hyphae 
+beyond three is irrelavant and provide inaccurate results, given the difference between
+the number of germtubes may not be equal or consistent between levels.
 `branches` would be better characterised as ordinal and therefore leads us to using
 *ordinal logistic regression* methods.  
 
 ### Ordinal logistic regression  
 The aim of this analysis is to predict the likelihood of a conidia germinating and 
 branching under different temperature conditions.  
-We could state that the response variable is the state of the conidia, wheather 
-it be non-germinated (0), germinated (1), branched (2), or twice branched (3) with three germ-tubes.
-Because this is count data and our response is not binomial but multinomial and 
-ordered,the type of analysis we should use is an ordinal logistic regression.  
+The data is count data and our response is not binomial but ordered multinomial, 
+which leads us to use an ordinal logistic regression.  
 
 First we need to convert the count data into a longer format, so each row represents
 an observation.  
@@ -413,7 +426,10 @@ br_tm_lng[, c("Tm", "branches", "rep") := list(Tm,
                                                as.factor(rep))]
 ```
 
-Now we have prepared our data lets try it in our first model.  
+#### Model 1 - temperature effect on germ-tube production  
+
+Now we have prepared our data lets try it in our first model assuming a linear and 
+additive relationship between germ tube number and temperature and leaf rep.  
 
 ```{r m1}
 m1 <- polr(branches ~ Tm + rep, 
@@ -427,7 +443,7 @@ The output is in proportional log odds and presents *Coefficients* which represe
 the change in log odds for each unit of the predictor.
 For example for each degree temperature increases the log odds increases `r round(coef(m1)[1],3)`.  
 
-The coefficient `rep` is not significiant and can probably be dropped from the model.  
+The coefficient `rep` is not significant and can probably be dropped from the model.  
 
 Lets plot the model predictions for temperatures between 8$^\circ$ C and 35$^\circ$ C
 to determine if the result is reasonable compared to the raw data.  
@@ -463,8 +479,9 @@ m1_pred |>
 
 The result is rather linear and predicts more branches at 40C when the raw data does not see any from 35C or presumably above.
 
-Lets try applying some splines to temperature and dropping rep.  
+#### Model 2 - Temperature effect on germ-tube production  
 
+Lets try applying some splines to temperature and dropping rep.  
 
 ```{r m2}
 library(splines)
@@ -475,7 +492,7 @@ summary(m2)
 The residual deviance and AIC on this model is lower, indicating this might be a 
 better fit. 
 Also the t value is higher hinting this model shows clearer differences between 
-the variables.  
+the variables, especially in the middle of the studied temperature range.  
 
 Now lets try predicting from this model.  
 
@@ -509,10 +526,14 @@ m2_pred |>
 ```
 
 This plot looks like it would fit the raw data much better than `m1`.
-However, the model is more centered on 25$^\circ$C as the temperature producing the
-most germinated conidia with three germ-tubes.
-Lets see if we can improve the model by adding more knots.
+However, the model estimates 25$^\circ$C as the temperature likely to produce
+a greater proportion of germinated conidia with three germ-tubes. 
+This does not refelct the raw data we plotted in figure 2b.  
 
+#### Model 3 - Temperature effect on germ-tube production  
+
+Lets see if we can improve the model by changing the number and placement of the 
+spline knots.  
 
 ```{r m3}
 m3 <- polr(branches ~ bs(Tm,
@@ -523,7 +544,7 @@ summary(m3)
 The residual deviance and AIC on this model is lower, indicating this might be a 
 better fit. 
 Also the t value is higher hinting this model shows clearer differences between 
-the variables.  
+the temperature variables.  
 
 Now lets try predicting from this model.  
 
@@ -557,15 +578,18 @@ m3_pred |>
 ```
 
 The plot shows that this model might have too many spline knots. 
-Lets compare the mode using the `anova()` function.
+Lets compare the models using the `anova()` function.
 
 ```{r anova_m2-3}
 anova(m2,m3)
 ```
 While the anova says `m3` is a significantly better model, the residual deviance 
-informs us it is not by much. 
-Based on the plot we will try fewer knots to reduce the wiggliness
+informs us it is not by much.  
 
+#### Model 4 - Temperature effect on germ-tube production  
+
+Based on the plot of model 3, we will try another model with fewer knots to reduce 
+the wiggliness.  
 
 ```{r m4}
 m4 <- polr(branches ~ bs(Tm,
@@ -625,7 +649,7 @@ anova(m3,m4)
 ```
 While the anova says `m3` is a significantly better model, the residual deviance 
 informs us it is not by much. 
-Because the plot of `m4` seems a more reasonable fit to the data, we will use this.  
+Because the `m3` plot looks over-fit and `m4` plot seems a more reasonable fit to the raw data, we will use this.  
 
 Lets examine the coefficients.  
 
@@ -659,7 +683,7 @@ are not advised given they assume a normal distribution and infinite degrees of 
 coef_table <- data.table(coef(summary(m4)), keep.rownames = TRUE)
 
 # calculate p-values
-coef_table[, p_value := pnorm(abs(`t value`),lower.tail = FALSE) *2]
+coef_table[, p_value := pnorm(abs(`t value`),lower.tail = FALSE) *2][, sig := p_star(p_value)]
 coef_table
 ```
 
