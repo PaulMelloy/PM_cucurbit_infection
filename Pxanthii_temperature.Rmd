@@ -347,7 +347,7 @@ Figure_2b <-
    ylab("Germ tube production (%)")+
    labs(colour = "Germ tubes")+
    theme_classic()+
-   annotate("text", x = 0.8, y = 99, label = "(b)")
+   annotate("text", x = 0.8, y = 99, label = "(a)", size = 5)
 
 Figure_2b   
 ```
@@ -630,15 +630,38 @@ m4_pred <-
       value.name = "prob"
    )
 
-m4_pred |>
-   ggplot(aes(Tm, prob, colour = branches))+
+Figure_3b <- 
+   m4_pred |>
+   ggplot(aes(Tm, prob *100, colour = branches))+
    geom_line(size = 1)+
    theme_minimal()+
+   scale_colour_viridis_d(direction = -1)+
+   xlab(expression("Temperature " ( degree*C)))+
+   ylab("Percentage (%)")+
+   labs(colour = "Germ tubes")+
    geom_vline(aes(xintercept = 28), linetype = 2)+
    annotate(geom = "text",
             x = 29,
-            y = 0.9,
-            label = 28)
+            y = 98,
+            label = 28)+
+   annotate(geom = "text",
+            x = 6,
+            y = 96,
+            label = "(b)",size = 5)
+Figure_3b
+```
+
+```{r saveFig3b, eval=FALSE, include=FALSE}
+# Save table as a word document
+ggsave(
+   filename = "FiguresTables/Fig3b_TemperatureGermtube.tiff",
+   plot = Figure_3b,
+   device = "tiff",
+   height = 6,
+   width = 7,
+   dpi = 300,
+   units = "in"
+)
 ```
 
 The plot shows a smoother fit with the knots we have tried. 
