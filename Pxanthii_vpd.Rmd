@@ -22,6 +22,7 @@ library(lme4) # Linear mixed effect modelling
 library(ggplot2) # graphing
 library(MASS) # logistical ordinal regression functions, among other things
 library(splines) # non-linear predictors
+source("R/p_star.R")
 ```
 <br>  
 
@@ -53,9 +54,9 @@ length(unique(g_vpd$vpd)) *           # Temperature incubators
 Add the number of leaves sampled at 36 hours to count germ-tube branching.  
 
 ```{r}
-br_tm
-length(unique(br_tm$Tm)) *           # Temperature incubators
-   length(unique(br_tm$rep))       # Reps or individual leaves?
+# br_tm
+# length(unique(br_tm$Tm)) *           # Temperature incubators
+#    length(unique(br_tm$rep))       # Reps or individual leaves?
 ```
 
 ### Visualise the raw data  
@@ -192,10 +193,26 @@ and less affected by drop one, tests.
 
 
 ```{r}
-m4v <- gam(cbind(germ_n,non_germ_n) ~ s(vpd, k = 7, bs = "ps") + s(Tm, k = 3) + i_period, 
+m4v <- gam(cbind(germ_n,non_germ_n) ~ s(vpd, k = 7) + Tm + s(i_period,k=3), 
            data = g_vpd,
            family = "binomial")
+summary(m4v)
+plot(m4v)
 ```
+
+The wiggliness of the curve seems above 0.5 kPa seems to be more pronounced in warmer
+temperature treatments. 
+To evaluate if this is the case lets look at a temperature VPD interaction.  
+
+
+```{r}
+m5v <- gam(cbind(germ_n,non_germ_n) ~ te(vpd,Tm, k = 3)+ s(i_period,k=3), 
+           data = g_vpd,
+           family = "binomial")
+summary(m5v)
+anova(m4v,m5v)
+```
+This comparison shows no interaction between temperature and VPD.
 
 
 ```{r}
@@ -204,6 +221,7 @@ anova(m3v,m4v)
 AIC(m1v,m2v,m3v, m4v)
 ```
 
+Model four shows the best fit to the data 
 
 ### Impact of VPD on *P. xanthii* branching  
 
@@ -269,7 +287,7 @@ b_v |>
    labs(colour = "Germ tubes")+
    theme_classic()+
    theme(axis.text.x = element_text(angle = 70, vjust = 1.7, hjust = 2))+
-   geom_text(aes(x = as.factor(vpd), y = 115, label = Tm),size = 3,)+
+   geom_text(aes(x = as.factor(vpd), y = 115, label = paste0(Tm,"C")),size = 2.5)+
    scale_y_continuous(limits = c(0,120), breaks = c(0,25,50,75,100))
 ```
 <br>  
@@ -277,7 +295,7 @@ Each experiment has similar trends and different variation for each vpd.
 <br>  
 Next lets consolidate all the experimental data together
 
-```{r plot_br_vpd_exp}
+```{r plot_br_vpd}
 b_v[,percent := (conidia/sum(conidia))*100,
     by = .(vpd)] 
 b_v |>
@@ -350,7 +368,7 @@ test_dat <- data.table(Tm = rep(seq(from = 22, to = 28, by = 1),
                        ) # randomly use either the first or second rep
 ```
 
-```{r, fig.dim=c(5,50)}
+```{r, fig.dim=c(7,10)}
 # create a data.frame with predicted values and reference them to the respective temperature
 m1_pred <-
    as.data.table(cbind(test_dat,
@@ -393,19 +411,13 @@ Model two we will investigate whether there is an interaction between temperatur
 and infection period.  
 
 ```{r model_2}
-
-m2 <- polr(branches ~ bs(vpd) + Tm+exp, data = b_vpd_lng, Hess = TRUE)
-unique(b_vpd[,RH])
+m2 <- polr(branches ~ bs(vpd,knots = 0.5) + Tm + exp, data = b_vpd_lng, Hess = TRUE)
 summary(m2)
-summary(m3)
-anova(m2,m3)
 ```
-This model shows slightly higher R squared and 'explained deviance' values, with 
-a lower UBRE  value indicating that model two (`m2`) is the better model.  
+Let's predict from this model to consider it's performance.
 
-Lets compare the models against each other.
 
-```{r, fig.dim=c(5,50)}
+```{r}
 # create a data.frame with predicted values and reference them to the respective temperature
 m2_pred <-
    as.data.table(cbind(test_dat,
@@ -431,7 +443,7 @@ m2_pred[,.(prob = mean(prob)),by= .(vpd,Tm,branches)] |>
    theme_minimal()
 ```
 
-There is a consistant effect of temperature that increases the number of germinated
+There is a consistent effect of temperature that increases the number of germinated
 and branching germ-tubes. 
 Low VPD has a strong effect on the number and proportion of branching germtubes.
 While the number of germinated conidia and germtube branching decreases rapidly as 
@@ -448,43 +460,55 @@ m2_pred[,.(prob = mean(prob)),by= .(vpd,branches)] |>
    theme_minimal()
 ```
 
+Given the plots show a decent similarity to the raw data we will choose `m2`.
+Lets now extract the coefficients
+
+```{r m2_coefTab}
+# get table of coefficients
+coef_table <- data.table(coef(summary(m2)), keep.rownames = TRUE)
+
+# calculate p-values
+coef_table[, p_value := pnorm(abs(`t value`),lower.tail = FALSE) *2][, sig := p_star(p_value)]
+coef_table
+```
+
 
 
 ## Baysian approach  
 
-```{r install_stan}
+```{r install_stan, include=FALSE}
 #install.packages("rstanarm")
 library(rstanarm)
 library(bayesplot)
 ```
 
 ```{r, include=FALSE}
-fit1 <- stan_gamm4(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k = 3) + s(Tm, k = 6, bs = "ps"), 
-                   data = g_tm, family = "binomial", chains = 1)
-
-plot_nonlinear(fit1)
-
-m5 <- gam(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k=3) + s(Tm, k =4, bs = "ps"),
-          data = g_tm,
-          family = "binomial",
-)
-
-prior_summary(fit1)
-summary(fit1)
-mcmc_areas(as.matrix(fit1),
-           pars = "Tm",
-           prob = 0.95)
-pp_check(fit1,"stat")
+# fit1 <- stan_gamm4(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k = 3) + s(Tm, k = 6, bs = "ps"), 
+#                    data = g_tm, family = "binomial", chains = 1)
+# 
+# plot_nonlinear(fit1)
+# 
+# m5 <- gam(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k=3) + s(Tm, k =4, bs = "ps"),
+#           data = g_tm,
+#           family = "binomial",
+# )
+# 
+# prior_summary(fit1)
+# summary(fit1)
+# mcmc_areas(as.matrix(fit1),
+#            pars = "Tm",
+#            prob = 0.95)
+# pp_check(fit1,"stat")
 ```
 
 
 ```{r, include=FALSE}
-g_vpd %>%
-  mutate(germ = germ_n/(non_germ_n + germ_n)) %>%
-  group_by(vpd,i_period) %>%
-  summarise(m_germ = mean(germ),
-            Tm= unique(Tm)) %>%
-   filter(i_period == 12 &
-             vpd > 0.13) %>%
-   summary()
+# g_vpd %>%
+#   mutate(germ = germ_n/(non_germ_n + germ_n)) %>%
+#   group_by(vpd,i_period) %>%
+#   summarise(m_germ = mean(germ),
+#             Tm= unique(Tm)) %>%
+#    filter(i_period == 12 &
+#              vpd > 0.13) %>%
+#    summary()
 ```
