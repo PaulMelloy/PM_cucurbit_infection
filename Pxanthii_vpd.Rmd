@@ -486,11 +486,6 @@ b_vpd_lng[, c("exp",
 Test change
 
 ```{r}
-# m1.1 <- stan_polr(germ_tubes ~ vpd + Tm, chains = 1,
-#                   prior = R2(0.5, what = "median"), 
-#                   data = b_vpd_lng)
-# summary(m1.1)
-
 m1 <- polr(branches ~ vpd + Tm+exp, data = b_vpd_lng, Hess = TRUE)
 
 summary(m1)
