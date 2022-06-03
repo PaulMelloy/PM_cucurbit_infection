@@ -130,7 +130,8 @@ g_vpd |>
 
 
 This data is very hard to fit a curve to and seems like it would benefit with two functions.
-Lets plot again without the saturated 99% humidity treatment
+Lets plot again without the saturated 99% humidity treatment.  
+
 ```{r plot_subset_rh}
 i_p_labs <-c("12 hours","24 hours","36 hours","48 hours")
 names(i_p_labs) <- c(12,24,36,48)
@@ -336,18 +337,25 @@ summary(b_vpd3)
 <br>  
 
 ## Impact of Temperature on *P. xanthii* germination  
-There were three data-sets for 
-Peek at the data
+There were three data-sets which recorded germtube formation at a range of VPD. 
+
+Lets look at the data.  
 
 ```{r data_peek_br}
+# Experiment 1
 str(b_vpd)
+
+# Experiment 2
 str(b_vpd2)
+
+# Experiment 3
 str(b_vpd3)
 ```
 <br>  
 
-Look at a summary of the data
-```{r}
+
+```{r eval=FALSE, include=FALSE}
+# Look at a summary of the data  
 b_vpd[, list(n = mean(conidia)),
       by = list(vpd, Tm, branches)][order(vpd,Tm)]
 
@@ -356,16 +364,19 @@ b_vpd2[ ,list(n = mean(conidia)),
 
 b_vpd3[ ,list(n = mean(conidia)),
       by = list(vpd, Tm, branches)][order(vpd,Tm)]
+```
 
+We will combine the data into one object to interegate.  
+```{r bv_combine}
 b_v <-rbind(b_vpd,b_vpd2,b_vpd3)
 ```
 
 
 ### Visualise the raw data  
-First we will observe the effect of vpd on the number of germtubes at 36 hours for
+First we want observe the effect of VPD on the number of germtubes at 36 hours for
 each experimental rep.  
 
-```{r plot_br_vpd_exp}
+```{r plot_br_vpd_exp, fig.dim=c(8,8)}
 b_v[,percent := (conidia/sum(conidia))*100,
     by = .(vpd,exp)] 
 b_v |>
@@ -380,7 +391,7 @@ b_v |>
    labs(colour = "Germ tubes")+
    theme_classic()+
    theme(axis.text.x = element_text(angle = 70, vjust = 1.7, hjust = 2))+
-   geom_text(aes(x = as.factor(vpd), y = 115, label = paste0(Tm,"C")),size = 2.5)+
+   geom_text(aes(x = as.factor(vpd), y = 115, label = paste0(Tm,"°C")),size = 2.5)+
    scale_y_continuous(limits = c(0,120), breaks = c(0,25,50,75,100))
 ```
 <br>  
@@ -391,35 +402,54 @@ Next lets consolidate all the experimental data together
 ```{r plot_br_vpd}
 b_v[,percent := (conidia/sum(conidia))*100,
     by = .(vpd)] 
-b_v |>
+   
+Figure_5 <- 
+   b_v |>
    ggplot(aes( x = as.factor(vpd), 
                y = percent ,
                fill = as.factor(branches))) + 
    geom_col()+
    scale_fill_brewer(palette = "Blues", name = "Germ tubes")+
-   xlab("Vapour pressure deficit")+
-   ylab("Percent germinated")+
+   xlab("Vapour pressure deficit (kPa)")+
+   ylab("Percent germinated (%)")+
    labs(colour = "Germ tubes")+
    theme_classic()+
    theme(axis.text.x = element_text(angle = 70, vjust = 1.7, hjust = 2))+
-   geom_text(aes(x = as.factor(vpd), y = 105, label = Tm),size = 3,)+
+   geom_text(aes(x = as.factor(vpd), y = 105, label = paste0(Tm,"°C")),size = 2.5)+
    scale_y_continuous(limits = c(0,110), breaks = c(0,25,50,75,100))
+Figure_5
+```
+
+```{r saveFig5, eval=FALSE, include=FALSE}
+# Save table as a word document
+ggsave(
+   filename = "FiguresTables/Fig5_VPDGermtube.tiff",
+   plot = Figure_5,
+   device = "tiff",
+   height = 6,
+   width = 7,
+   dpi = 300,
+   units = "in"
+)
 ```
 
 What is the mean differences between the most saturated treatments 0.026 - 0.038 and
 the next highest saturated treatments 0.132 - 0.186?  
 
-```{r}
+```{r VPDiff}
+# Temperature 22C
 b_v[vpd == 0.026 &
        branches == 3, sum(percent)] -
    b_v[vpd == 0.132 &
        branches == 3, sum(percent)]
 
+# Temperature 25C
 b_v[vpd == 0.032 &
        branches == 3, sum(percent)] -
    b_v[vpd == 0.158 &
        branches == 3, sum(percent)]
 
+# Temperature 28C
 b_v[vpd == 0.038 &
        branches == 3, sum(percent)] -
    b_v[vpd == 0.189 &
@@ -460,7 +490,6 @@ Test change
 #                   prior = R2(0.5, what = "median"), 
 #                   data = b_vpd_lng)
 # summary(m1.1)
-
 
 m1 <- polr(branches ~ vpd + Tm+exp, data = b_vpd_lng, Hess = TRUE)
 
