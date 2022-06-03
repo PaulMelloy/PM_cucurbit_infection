@@ -1,9 +1,10 @@
 ---
-title: "Untitled"
+title: "The effect of vapour pressure deficit on *Podosphera xanthii* germination and germ tube production"
 description: |
-  A new article created using the Distill format.
+  The statistical method undertaken in analysing the effect of temperature on 
+  _P. xanthii_ germination and germ-tube production.  
 author:
-  - name: Paul Melloy 
+  - name: Paul Melloy
     url: https://PaulMelloy.github.io
     affiliation: The University of Queensland
     affiliation_url: https://uq.edu.au
@@ -18,7 +19,6 @@ Load R libraries required for analysis
 library(data.table) # data structure, cleaning and formatting
 library(mgcv) # gam statistical models
 library(rstanarm) # Bayesian statistical models
-library(lme4) # Linear mixed effect modelling
 library(ggplot2) # graphing
 library(MASS) # logistical ordinal regression functions, among other things
 library(splines) # non-linear predictors
@@ -39,12 +39,23 @@ g_vpd <- fread("cache/germination_vpd.csv")
 Peek at the data
 
 ```{r data_peek}
-head(g_vpd)
 str(g_vpd)
+# inspect environmental treatments
+unique(g_vpd[,.(RH,Tm,vpd)])
 ```
+This table shows there are 18 VPD treatments consisting of six relative humidity
+and three temperatures.  
+
+Sampling times in hours.  
+
+```{r}
+g_vpd[, .(reps = paste0(range(rep), collapse = " - ")), by = i_period]
+```
+
 <br>  
 
 How many leaves were inoculated?  
+
 ```{r}
 length(unique(g_vpd$vpd)) *           # Temperature incubators
    length(unique(g_vpd$rep)) *      # individual leaves
@@ -54,9 +65,9 @@ length(unique(g_vpd$vpd)) *           # Temperature incubators
 Add the number of leaves sampled at 36 hours to count germ-tube branching.  
 
 ```{r}
-# br_tm
-# length(unique(br_tm$Tm)) *           # Temperature incubators
-#    length(unique(br_tm$rep))       # Reps or individual leaves?
+br_tm
+length(unique(br_tm$Tm)) *           # Temperature incubators
+   length(unique(br_tm$rep))       # Reps or individual leaves?
 ```
 
 ### Visualise the raw data  
@@ -90,7 +101,7 @@ g_vpd |>
    geom_point()+
    facet_wrap(facets = c("i_period"), 
               labeller = labeller(i_period = i_p_labs))+
-   geom_smooth(method = "gam",formula = y ~ s(x,k=5), alpha = 0.1)+
+   geom_smooth(method = "gam",formula = y ~ bs(x,k=0.2), alpha = 0.3)+
    scale_color_viridis_d()+
    xlab("VPD")+
    ylab("Germinated conidia (%)")+
@@ -214,14 +225,69 @@ anova(m4v,m5v)
 ```
 This comparison shows no interaction between temperature and VPD.
 
+```{r germ_bsmod}
+b_k <- range(g_vpd$vpd) # set spline boundary knots
+m6v <- gam(cbind(germ_n,non_germ_n) ~ s(vpd, k = 4,bs = "cs") + Tm + s(i_period,k=3),
+           knots = list(vpd = c(b_k[1],0.1,0.4,b_k[2])),
+           data = g_vpd,
+           family = "binomial")
+
+
+summary(m6v)
+plot(m6v)
+
+vis.gam(m6v,
+        phi = 20,
+        theta = 30,
+        view = c("vpd","Tm"),
+        #cond = list(i_period = 48),
+        main = "48 hours")
+```
+
 
 ```{r}
 anova(m2v,m3v)
 anova(m3v,m4v)
-AIC(m1v,m2v,m3v, m4v)
+anova(m4v,m6v)
+AIC(m1v,m2v,m3v, m4v, m5v, m6v)
 ```
 
 Model four shows the best fit to the data 
+
+```{r}
+vis.gam(m6v,
+        phi = 20,
+        theta = 45)
+par(mfrow = c(2,2),
+    oma = c(0,0,0,0),
+    mar = c(0.1,0.1,1,0.1))
+vis.gam(m6v,
+        phi = 20,
+        theta = 45,
+        view = c("vpd","Tm"),
+        cond = list(i_period = 12),
+        main = "12 hours")
+vis.gam(m6v,
+        phi = 20,
+        theta = 45,
+        view = c("vpd","Tm"),
+        cond = list(i_period = 24),
+        main = "24 hours")
+vis.gam(m6v,
+        phi = 20,
+        theta = 45,
+        view = c("vpd","Tm"),
+        cond = list(i_period = 36),
+        main = "36 hours")
+vis.gam(m6v,
+        phi = 20,
+        theta = 45,
+        view = c("vpd","Tm"),
+        cond = list(i_period = 48),
+        main = "48 hours")
+
+par(mfrow = c(1,1))
+```
 
 ### Impact of VPD on *P. xanthii* branching  
 
@@ -244,6 +310,7 @@ summary(b_vpd3)
 <br>  
 
 ## Impact of Temperature on *P. xanthii* germination  
+There were three data-sets for 
 Peek at the data
 
 ```{r data_peek_br}
@@ -312,6 +379,28 @@ b_v |>
    geom_text(aes(x = as.factor(vpd), y = 105, label = Tm),size = 3,)+
    scale_y_continuous(limits = c(0,110), breaks = c(0,25,50,75,100))
 ```
+
+What is the mean differences between the most saturated treatments 0.026 - 0.038 and
+the next highest saturated treatments 0.132 - 0.186?  
+
+```{r}
+b_v[vpd == 0.026 &
+       branches == 3, sum(percent)] -
+   b_v[vpd == 0.132 &
+       branches == 3, sum(percent)]
+
+b_v[vpd == 0.032 &
+       branches == 3, sum(percent)] -
+   b_v[vpd == 0.158 &
+       branches == 3, sum(percent)]
+
+b_v[vpd == 0.038 &
+       branches == 3, sum(percent)] -
+   b_v[vpd == 0.189 &
+       branches == 3, sum(percent)]
+
+```
+
 
 ### Analysis of conidial germination and germtube proliferation
 In order to analyse the data we need to convert the data to a longer format, where
