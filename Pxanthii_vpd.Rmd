@@ -54,22 +54,6 @@ g_vpd[, .(reps = paste0(range(rep), collapse = " - ")), by = i_period]
 
 <br>  
 
-How many leaves were inoculated?  
-
-```{r}
-length(unique(g_vpd$vpd)) *           # Temperature incubators
-   length(unique(g_vpd$rep)) *      # individual leaves
-   length(unique(g_vpd$i_period))    # Sampling times
-```
-
-Add the number of leaves sampled at 36 hours to count germ-tube branching.  
-
-```{r}
-br_tm
-length(unique(br_tm$Tm)) *           # Temperature incubators
-   length(unique(br_tm$rep))       # Reps or individual leaves?
-```
-
 ### Visualise the raw data  
 Let's plot the data over time, we will need to omit temperatures 8 and 35 where
 no germination was observed.
