@@ -55,8 +55,7 @@ g_vpd[, .(reps = paste0(range(rep), collapse = " - ")), by = i_period]
 <br>  
 
 ### Visualise the raw data  
-Let's plot the data over time, we will need to omit temperatures 8 and 35 where
-no germination was observed.
+Let's plot the germination over time split by relative humidity.
 
 ```{r plot_raw_timexRH}
 g_vpd |>
@@ -69,30 +68,66 @@ g_vpd |>
    ylab("Germinated conidia (%)")+
    labs(colour = "Temperature")+
    theme_classic() +
-   ggtitle("Germinated conidia over time, subset by relative humidity")
-   # scale_x_continuous(limits = c(12,48), breaks = c(12,18,24,30,36,42,48))++
-   # scale_y_continuous(limits = c(0,100), n.breaks = 5)
+   ggtitle("Germinated conidia over time, subset by relative humidity")+
+   scale_x_continuous(limits = c(12,48), breaks = c(12,24,36,48))+
+   scale_y_continuous(limits = c(0,100), n.breaks = 5)
    
 ```
+Germination increases in a linear fashion at all the relative humidity treatments
+with exception to 99 % humidity, which shows a somewhat non-linear trend in the 22$^\circ$C
+and 25$^\circ$C temperature treatments.  
 
-
+Let's look at the same data in terms of VPD split by time. 
 
 ```{r plot_raw_timexVPD}
 i_p_labs <-c("12 hours","24 hours","36 hours","48 hours")
 names(i_p_labs) <- c(12,24,36,48)
-g_vpd |>
+Figure_4 <- 
+   g_vpd |>
    ggplot(aes(x = vpd, y = germ_n, colour = as.factor(Tm))) + 
    geom_point()+
    facet_wrap(facets = c("i_period"), 
               labeller = labeller(i_period = i_p_labs))+
+   geom_smooth(method = "gam",formula = y ~ bs(x,k=0.2), alpha = 0.3, size = 0.8)+
+   scale_color_viridis_d()+
+   xlab("Vapour pressure deficit (kPa)")+
+   ylab("Germinated conidia (%)")+
+   labs(colour = "Temperature")+
+   theme_classic()
+Figure_4
+```
+
+
+```{r saveFig4, eval=FALSE, include=FALSE}
+# Save table as a word document
+ggsave(
+   filename = "FiguresTables/Fig4_VPDGermination.tiff",
+   plot = Figure_4,
+   device = "tiff",
+   height = 6,
+   width = 7,
+   dpi = 300,
+   units = "in"
+)
+```
+
+Let's look at the same data in terms of VPD split by temperature. 
+
+```{r plot_raw_TmxVPD}
+#i_p_labs <-c("12 hours","24 hours","36 hours","48 hours")
+# names(i_p_labs) <- c(12,24,36,48)
+g_vpd |>
+   ggplot(aes(x = vpd, y = germ_n, colour = as.factor(i_period))) + 
+   geom_point()+
+   facet_wrap(facets = c("Tm"))+
    geom_smooth(method = "gam",formula = y ~ bs(x,k=0.2), alpha = 0.3)+
    scale_color_viridis_d()+
    xlab("VPD")+
    ylab("Germinated conidia (%)")+
-   labs(colour = "Temperature")+
+   labs(colour = "Incubation time")+
    theme_classic()
-
 ```
+
 
 This data is very hard to fit a curve to and seems like it would benefit with two functions.
 Lets plot again without the saturated 99% humidity treatment
@@ -113,19 +148,38 @@ g_vpd[g_vpd$RH != 99] |>
 ```
 
 From these plots it seems that the influence of VPD on germination is bimodal, with an increase in germination between 1.5 and 2 kPa. 
-Particularly in the warmer treatments
+Particularly in the warmer treatments.  
+
+***  
+
 
 ### VPD influence on germination - analysis
+
+Lets start the analysis with a simple model with smoothing terms on VPD, Temperature
+and infection period.
+We are using a binomial general additive model for all the germination analysis, 
+because it is binary count data. 
+As we saw from plotting the raw data, we likely have non-linear predictors and a 
+`gam` model is a great way to estimate with splines on the predictors.  
+
 ```{r m1v}
 m1v <- gam(cbind(germ_n,non_germ_n) ~ s(vpd, k = 5) + s(Tm, k = 3) + s(i_period, k = 3), 
            data = g_vpd,
            family = "binomial")
 summary(m1v)
 plot(m1v)
-vis.gam(m1v)
 ```
 
-As earlier, lets try and reduce the wiggliness by using P-splines  
+Overall the model fits very well with a R$^2$ of `r round(summary(m1v)$r.sq,4)`
+The splines on `Tm` and `i_period` were statistically significant, and seem well 
+fit and logical when we refer them to the raw data. 
+Warmer temperatures, from the three temperatures included (22,25 and 28$^\circ$C)
+lead to more conidia germinating.
+Incubation time also showed a positive relationship with the number of germinated 
+conidia, ie. the longer the incubation the more conidia were likely to have germinated. 
+VPD also was a significant predictor however the wiggliness might be able to be improved.  
+
+As earlier, lets try and reduce the willingness by using P-splines.  
 
 ```{r m2v}
 m2v <- gam(cbind(germ_n,non_germ_n) ~ s(vpd, k = 5, bs = "ps") + s(Tm, k = 3) + s(i_period, k = 3), 
@@ -133,14 +187,11 @@ m2v <- gam(cbind(germ_n,non_germ_n) ~ s(vpd, k = 5, bs = "ps") + s(Tm, k = 3) + 
            family = "binomial")
 summary(m2v)
 plot(m2v)
-vis.gam(m2v,
-        phi = 20,
-        theta = 45)
 ```
 
-There is a better fit and a decreasing trend in the vpd plot.  
+This shows only a small improvement and a decreasing trend in the VPD plot.  
 
-Next lets try more vpd knots
+Next lets try more VPD knots.  
 
 ```{r m3v}
 m3v <- gam(cbind(germ_n,non_germ_n) ~ s(vpd, k = 7, bs = "ps") + s(Tm, k = 3) + s(i_period, k = 3), 
@@ -148,44 +199,14 @@ m3v <- gam(cbind(germ_n,non_germ_n) ~ s(vpd, k = 7, bs = "ps") + s(Tm, k = 3) + 
            family = "binomial")
 summary(m3v)
 plot(m3v)
-vis.gam(m3v,
-        phi = 20,
-        theta = 45)
-par(mfrow = c(2,2),
-    oma = c(0,0,0,0),
-    mar = c(0.1,0.1,1,0.1))
-vis.gam(m3v,
-        phi = 20,
-        theta = 45,
-        view = c("vpd","Tm"),
-        cond = list(i_period = 12),
-        main = "12 hours")
-vis.gam(m3v,
-        phi = 20,
-        theta = 45,
-        view = c("vpd","Tm"),
-        cond = list(i_period = 24),
-        main = "24 hours")
-vis.gam(m3v,
-        phi = 20,
-        theta = 45,
-        view = c("vpd","Tm"),
-        cond = list(i_period = 36),
-        main = "36 hours")
-vis.gam(m3v,
-        phi = 20,
-        theta = 45,
-        view = c("vpd","Tm"),
-        cond = list(i_period = 48),
-        main = "48 hours")
-
-par(mfrow = c(1,1))
 ```
 
-While there exists a lot of wiggliness in the gam, the vpd plot shows the increase in germination in at around 1.5 kPa and the rapid decrease in germination between the saturated treatments (0.026 - 0.038 kPa) and the next highest humidity (0.158 - 0.189 kpa).
+While there exists a lot of willingness in the gam, the vpd plot shows the increase in germination in at around 1.5 kPa and the rapid decrease in germination between the saturated treatments (0.026 - 0.038 kPa) and the next highest humidity (0.158 - 0.189 kpa).
 This model also provides a high R-squared (`r round(summary(m3v)$r.sq,4)`), low UBRE `r round(m3v$gcv.ubre,3)`, indicating good predictive ability
 and less affected by drop one, tests.
 
+Temperature does not seem like it needs a non-linear terms and test to see if there
+is any significant changes.  
 
 ```{r}
 m4v <- gam(cbind(germ_n,non_germ_n) ~ s(vpd, k = 7) + Tm + s(i_period,k=3), 
@@ -207,7 +228,19 @@ m5v <- gam(cbind(germ_n,non_germ_n) ~ te(vpd,Tm, k = 3)+ s(i_period,k=3),
 summary(m5v)
 anova(m4v,m5v)
 ```
-This comparison shows no interaction between temperature and VPD.
+This comparison shows no interaction between temperature and VPD reduces the fit 
+of the model.  
+
+Because of the rapid drop in germination between the lower VPD range, and little change 
+between the higher VPD treatments, it is difficult to fit a non-linear model with 
+evenly spaced splines. 
+Also we don't have enough evenly spaced VPD treatments to increase the number of 
+knots without causing an overfit model. 
+We can override this default behaviour of splines placed at set points by specifying 
+our own knot points.  
+
+Here we will specify two knots at 0.1 kPa and 0.4 kPa, in addition to the boundary
+knots.  
 
 ```{r germ_bsmod}
 b_k <- range(g_vpd$vpd) # set spline boundary knots
@@ -228,6 +261,10 @@ vis.gam(m6v,
         main = "48 hours")
 ```
 
+This model presents the best fit model so far, as shown by the R$^2$ value of `r round(summary(m6v)$r.sq,4)`,
+`r round(summary(m6v)$dev.exp,4)*100`% deviance explained and `r summary(m6v)$sp.criterion`UBRE.  
+
+Let's compare the model against the others.  
 
 ```{r}
 anova(m2v,m3v)
@@ -236,12 +273,15 @@ anova(m4v,m6v)
 AIC(m1v,m2v,m3v, m4v, m5v, m6v)
 ```
 
-Model four shows the best fit to the data 
+Model six (`m6v`) shows the best fit to the raw data plotted in Figure 4.   
 
 ```{r}
+# overall model
 vis.gam(m6v,
         phi = 20,
         theta = 45)
+
+# subset by incubation time
 par(mfrow = c(2,2),
     oma = c(0,0,0,0),
     mar = c(0.1,0.1,1,0.1))
@@ -272,6 +312,8 @@ vis.gam(m6v,
 
 par(mfrow = c(1,1))
 ```
+
+
 
 ### Impact of VPD on *P. xanthii* branching  
 
