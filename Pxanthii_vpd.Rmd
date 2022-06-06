@@ -416,7 +416,8 @@ Figure_5 <-
    theme_classic()+
    theme(axis.text.x = element_text(angle = 70, vjust = 1.7, hjust = 2))+
    geom_text(aes(x = as.factor(vpd), y = 105, label = paste0(Tm,"°C")),size = 2.5)+
-   scale_y_continuous(limits = c(0,110), breaks = c(0,25,50,75,100))
+   scale_y_continuous(limits = c(0,110), breaks = c(0,25,50,75,100))+
+   annotate("text", x = 1, y = 110, label = "(a)", size =5)
 Figure_5
 ```
 
@@ -492,7 +493,7 @@ summary(m1)
 ```
 
 Lets try predicting from this model so we can plot how it performs.
-First we need to make som test data.
+First we need to make some test data.
 
 ```{r test_dat}
 # Make a data.frame of test values to feed in the model
@@ -503,8 +504,7 @@ test_dat <- data.table(Tm = rep(seq(from = 22, to = 28, by = 1),
                                  times = 7*3),
                        exp = rep(1:3,
                                  each = 7*256)
-                       #rep = as.factor(rbinom(length(seq(from = 5, to = 40, by = 0.1)),1,0.5)+1)
-                       ) # randomly use either the first or second rep
+                       )
 ```
 
 ```{r, fig.dim=c(7,10)}
