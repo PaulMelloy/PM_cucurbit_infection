@@ -592,12 +592,33 @@ conidia stabilise all the way up to 2 kPa.
 Lets look at just VPD and drop the temperature effect.
 
 ```{r}
-m2_pred[,.(prob = mean(prob)),by= .(vpd,branches)] |>
+Figure_5b <- 
+   m2_pred[,.(prob = mean(prob)),by= .(vpd,branches)] |>
    ggplot(aes(x = vpd, y = prob, colour = branches))+
    #facet_wrap(facets = vars(Tm))+
    geom_line(size = 1)+
-   theme_minimal()
+   theme_minimal() + 
+   annotate("text", x = 0.01, y = 0.98, label = "(b)", size =5)+
+   scale_colour_viridis_d(direction = -1)+
+   xlab("Vapour pressure deficit (kPa)")+
+   ylab("Proportional probability")+
+   labs(colour = "Germ tubes")
+Figure_5b
 ```
+
+```{r saveFig5b, eval=FALSE, include=FALSE}
+# Save table as a word document
+ggsave(
+   filename = "FiguresTables/Fig5b_VPDGermtubeMod.tiff",
+   plot = Figure_5b,
+   device = "tiff",
+   height = 5,
+   width = 7,
+   dpi = 300,
+   units = "in"
+)
+```
+
 
 Given the plots show a decent similarity to the raw data we will choose `m2`.
 Lets now extract the coefficients
