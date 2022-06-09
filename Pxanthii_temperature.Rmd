@@ -20,6 +20,7 @@ library(mgcv) # gam statistical models
 library(rstanarm) # Bayesian statistical models
 library(ggplot2) # graphing
 library(MASS) # logistical ordinal regression functions, among other things
+library("flextable")
 source("R/p_star.R")
 ```
 <br>  
@@ -38,25 +39,45 @@ g_tm <- fread("cache/germination_temperature.csv")
 ## Impact of Temperature on *P. xanthii* germination  
 Peek at the data  
 
-Insert table of treatments reps and standard errors of raw data here.  
-
-```{r saveFig1, eval=FALSE, include=FALSE}
-# Save table as a word document
-doc <- officer::read_docx()
-doc <- body_add_flextable(doc, value = Sev_yield_table)
-#doc <- officer::body_end_section_landscape(doc)
-print(doc, target = "paper/figures/Severity&yield_SummaryTable.docx")
-```
-
-
-
 ```{r data_peek}
 head(g_tm)
 str(g_tm)
 ```
 <br>  
 
+Summary table of the data.  
+
+```{r}
+g_tm_table <- 
+   g_tm[, list(Mean = mean(germ_conidia),
+               Std_dev = round(sd(germ_conidia),3),
+               Median = median(germ_conidia),
+            Range = paste0(range(germ_conidia), collapse = " - " ),
+            Replicates = .N),
+     by = .(Tm, i_period)] |>
+   flextable() |>
+   align(align = "center") |>
+   set_header_labels(Tm = "Temperature",
+                     i_period = "Incubation (hours)",
+                     Std_dev = "Standard deviation") |>
+   fontsize(size = 8, part = "body") |>
+   fontsize(size = 10, part = "header") |>
+   bg(i = seq(2,32,2),bg = "grey80",part = "body")|>
+   set_caption("Table #: Podosheria xanthii germination percentage over a range of temperatures and incubation periods")
+g_tm_table
+```
+Insert table of treatments reps and standard errors of raw data here.  
+
+```{r saveFig1, eval=FALSE, include=FALSE}
+# Save table as a word document
+doc <- officer::read_docx()
+doc <- body_add_flextable(doc, value = g_tm_table)
+#doc <- officer::body_end_section_landscape(doc)
+print(doc, target = "FiguresTables/GermTemp_SummaryTable.docx")
+```
+
 How many leaves were inoculated?  
+
 ```{r}
 length(unique(g_tm$Tm)) *           # Temperature incubators
    length(unique(g_tm$leaf)) *      # individual leaves
@@ -328,6 +349,18 @@ production recorded.
 
 <br>  
 ### Visualise the raw data  
+
+Summary table of the data.  
+
+```{r}
+br_tm[, list(Mean = mean(conidia),
+            Range = paste0(range(conidia), collapse = " - " ),
+            Std_dev = round(sd(conidia),3),
+            Replicates = .N),
+     by = .(Tm, branches)]
+
+```
+
 
 Let's plot the number of germ tubes for each temperature treatment. 
 We can use stacked bars to show not only the number of germ tubes, but visually represent
