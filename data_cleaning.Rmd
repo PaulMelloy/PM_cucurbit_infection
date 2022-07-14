@@ -147,24 +147,24 @@ br_tm <- readLines("data/tempvs.branching(results).sas")[3:40]
 br_tm <- br_tm[-2]
 
 #write it to csv so it can be read back in cand formatted to a data.frame instead of vector.
-write(br_tm, "cache/Tm_branches.csv")
+write(br_tm, "cache/Tm_germtubes.csv")
 
 # read in data using fread
-br_tm <- fread("cache/Tm_branches.csv", 
-              col.names = c("obs", "Tm", "branches","rep", "conidia"))
+br_tm <- fread("cache/Tm_germtubes.csv", 
+              col.names = c("obs", "Tm", "germtubes","rep", "conidia"))
 
 # Add relative humidity and temperature data
-br_tm[ , c("Tm","branches", "obs") := list(as.numeric(gsub("oC","",Tm)),
-                                         as.numeric(gsub("b","",branches)),
+br_tm[ , c("Tm","germtubes", "obs") := list(as.numeric(gsub("oC","",Tm)),
+                                         as.numeric(gsub("b","",germtubes)),
                                          NULL)]
 
-# recalculate vpd and convert branches to numeric
+# recalculate vpd and convert germtubes to numeric
 zero_branch <- br_tm[, (100 - sum(conidia)), 
-                      by = .(Tm, rep)][,branches :=0][, .(Tm, branches, rep, V1)]
+                      by = .(Tm, rep)][,germtubes :=0][, .(Tm, germtubes, rep, V1)]
 
 setnames(zero_branch,old = "V1", new = "conidia")
 
-# Bind in the data containing non-germinated conidia as conidia with zero branches
+# Bind in the data containing non-germinated conidia as conidia with zero germtubes
 br_tm <- rbind(br_tm,zero_branch)[, conidia := round(conidia)]
 ```
 
@@ -178,7 +178,7 @@ br_tm <- rbindlist(
       br_tm,
       list(Tm = c(rep(8, 4 * 2),
                   rep(35, 4 * 2)),
-           branches = rep(c(0,1,2,3), 
+           germtubes = rep(c(0,1,2,3), 
                          each = 2,
                          times = 2),
            rep = rep(1:2, 8),
@@ -198,7 +198,7 @@ head(br_tm)
 ```
 
 ```{r save_br_tm}
-fwrite(br_tm[order(Tm,branches, rep),], "cache/branching_temperature.csv")
+fwrite(br_tm[order(Tm,germtubes, rep),], "cache/branching_temperature.csv")
 ```
 
 <br>  
@@ -301,8 +301,8 @@ br_vpd <-
      value.name = "conidia",
      variable.factor = FALSE)
 
-# split variable column into two columns vpd and branches and remove variable column
-br_vpd[, c("RH","branches") := 
+# split variable column into two columns vpd and germtubes and remove variable column
+br_vpd[, c("RH","germtubes") := 
           tstrsplit(variable, "_b")][, c("vpd","variable") :=
                                         list(round(epiphytoolR::calc_vpd(RH = as.numeric(RH),
                                                                          Tm = as.numeric(Tm)),
@@ -311,22 +311,22 @@ br_vpd[, c("RH","branches") :=
 
 # Change column order
 setcolorder(br_vpd,
-            neworder = c("vpd","RH", "Tm", "branches","conidia"))
+            neworder = c("vpd","RH", "Tm", "germtubes","conidia"))
 
 # set correct classes and add non-germinated
 br_vpd[, c("RH",
-           "branches",
+           "germtubes",
            "conidia",
            "rep") :=
               list(as.numeric(RH),
-                   as.numeric(branches),
+                   as.numeric(germtubes),
                    as.numeric(conidia),
                    rep(1:4,.N/4))]
 
 # Create data.table representing non-germinated conidia
 ## Assuming only 100 conidia were examined
 zero_branch <- br_vpd[, (100 - sum(conidia)), 
-                      by = .(vpd,RH,Tm, rep)][,branches :=0][, .(vpd,RH, Tm, branches, rep, V1)]
+                      by = .(vpd,RH,Tm, rep)][,germtubes :=0][, .(vpd,RH, Tm, germtubes, rep, V1)]
 
 # some treatment reps contained greater than 100 conidia assessments, therefore 
 #  any negative number will be converted to zero and no non-germinated conidia are
@@ -336,8 +336,8 @@ zero_branch[,V1 := fifelse(V1 < 0, 0, V1)]
 # rename column
 setnames(zero_branch,old = "V1", new = "conidia")
 
-# Bind and roder data containing non-germinated conidia as conidia with zero branches
-br_vpd <- rbind(br_vpd,zero_branch)[order(Tm,branches, rep)]
+# Bind and roder data containing non-germinated conidia as conidia with zero germtubes
+br_vpd <- rbind(br_vpd,zero_branch)[order(Tm,germtubes, rep)]
 ```
 
 Before saving the data a quick data check is made to look at column headers and 
@@ -362,25 +362,25 @@ br_vpd2 <-
   read_xls("data/Chapter 5 (germination vs VPD vs temp vs RH).xls",
            sheet = "Sheet2",
            range = "AF3:AI182",
-           col_names = c("vpd", "branches", "rep", "conidia"))
+           col_names = c("vpd", "germtubes", "rep", "conidia"))
 
 # make data.table format and add temperature and humidity
 br_vpd2 <- data.table(br_vpd2)[, c("Tm","RH") := list(rep(c(22,25,28), each = 12, times = 5),
                                                             rep(c(95,85,75,55,32), each = 12*3))]
-# remove "b" from branches and make it numeric
-br_vpd2[, branches := as.numeric(gsub("b","",branches))]
+# remove "b" from germtubes and make it numeric
+br_vpd2[, germtubes := as.numeric(gsub("b","",germtubes))]
 
 # use saturated branching data from temperature experiment
 br_vpd99 <- copy(br_tm)
 br_vpd99[, RH := 99][, c("vpd",
-                         "branches",
+                         "germtubes",
                          "rep",
                          "conidia",
                          "Tm",
                          "RH") := list(as.numeric(round(epiphytoolR::calc_vpd(RH = RH,
                                                                  Tm = Tm),
                                            3)),
-                                        branches,
+                                        germtubes,
                                         rep,
                                         conidia,
                                         Tm,
@@ -388,7 +388,7 @@ br_vpd99[, RH := 99][, c("vpd",
 
 br_vpd2 <- rbind(br_vpd99[
    Tm %in% unique(br_vpd2$Tm) &
-      branches != 0,],
+      germtubes != 0,],
                  br_vpd2)
 
 # recalculate vpd
@@ -401,7 +401,7 @@ br_vpd2[, vpd := round(epiphytoolR::calc_vpd(RH = RH,
 # Create data.table representing non-germinated conidia
 ## Assuming only 100 conidia were examined
 zero_branch <- br_vpd2[, (100 - sum(conidia)), 
-                      by = .(Tm, RH,vpd, rep)][,branches :=0][, .(vpd,RH,Tm, branches, rep, V1)]
+                      by = .(Tm, RH,vpd, rep)][,germtubes :=0][, .(vpd,RH,Tm, germtubes, rep, V1)]
 
 # some treatment reps contained greater than 100 conidia assessments, therefore 
 #  any negative number will be converted to zero and no non-germinated conidia are
@@ -413,10 +413,10 @@ setnames(zero_branch,old = "V1", new = "conidia")
 
 # Change column order
 setcolorder(br_vpd2,
-            neworder = c("vpd", "RH","Tm", "branches","rep","conidia"))
+            neworder = c("vpd", "RH","Tm", "germtubes","rep","conidia"))
 
-# Bind and roder data containing non-germinated conidia as conidia with zero branches
-br_vpd2 <- rbind(br_vpd2,zero_branch)[order(Tm,branches, rep)]
+# Bind and roder data containing non-germinated conidia as conidia with zero germtubes
+br_vpd2 <- rbind(br_vpd2,zero_branch)[order(Tm,germtubes, rep)]
 
 ```
 
@@ -445,16 +445,16 @@ dat <- readLines("data/vpd germtube.sas")[3:236]
 # cut out non-data lines
 dat <- dat[-c(2,55:58,111:114,167:170,223:226)]
 #write it to csv
-write(dat, "cache/vpd_branches.csv")
+write(dat, "cache/vpd_germtubes.csv")
 
 # read in data using fread
-br_vpd3 <- fread("cache/vpd_branches.csv")
+br_vpd3 <- fread("cache/vpd_germtubes.csv")
 
 # Add relative humidity and temperature data
 br_vpd3[ , c("RH","Tm") := list(rep(c(99,95,85,75,55,32),each = 36),
                                     rep(c(22,25,28),each = 12, times = 6))]
 
-# recalculate vpd and convert branches to numeric
+# recalculate vpd and convert germtubes to numeric
 br_vpd3[, c("vpd",
                 "bran") :=
               list(round(epiphytoolR::calc_vpd(RH = RH,
@@ -469,13 +469,13 @@ setcolorder(br_vpd3,
 
 setnames(br_vpd3,
          old = c("bran", "numb"),
-         new = c("branches","conidia"))
+         new = c("germtubes","conidia"))
 
 
 # Create data.table representing non-germinated conidia
 ## Assuming only 100 conidia were examined
 zero_branch <- br_vpd3[, (100 - sum(conidia)), 
-                      by = .(Tm, RH,vpd, rep)][,branches :=0][, .(vpd, RH, Tm, branches, rep, V1)]
+                      by = .(Tm, RH,vpd, rep)][,germtubes :=0][, .(vpd, RH, Tm, germtubes, rep, V1)]
 
 # some treatment reps contained greater than 100 conidia assessments, therefore 
 #  any negative number will be converted to zero and no non-germinated conidia are
@@ -487,10 +487,10 @@ setnames(zero_branch,old = "V1", new = "conidia")
 
 # Change column order
 setcolorder(br_vpd3[, c("Obs") := NULL],
-            neworder = c("vpd", "RH", "Tm", "branches","rep","conidia"))
+            neworder = c("vpd", "RH", "Tm", "germtubes","rep","conidia"))
 
-# Bind and roder data containing non-germinated conidia as conidia with zero branches
-br_vpd3 <- rbind(br_vpd3, zero_branch)[order(Tm,branches, rep)]
+# Bind and roder data containing non-germinated conidia as conidia with zero germtubes
+br_vpd3 <- rbind(br_vpd3, zero_branch)[order(Tm,germtubes, rep)]
 
 
 ```
