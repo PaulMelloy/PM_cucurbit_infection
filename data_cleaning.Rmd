@@ -1,25 +1,36 @@
 ---
-title: "The influence of temperature and vapour pressure deficit on conidia germination and germ tubes production in an Australian Podosphaera xanthii isolate."
+title: "Data preparation and formatting."
 description: |
   Data analysis for paper
 author:
   - name: Paul Melloy 
-    url: https://twitter.com/PaulMelloy
+    url: https://paulmelloy.github.io/
     affiliation: The University of Queensland
 date: "`r Sys.Date()`"
 output: distill::distill_article
 ---
 
+# The influence of temperature and vapour pressure deficit on conidia germination and germ tube production in an Australian *Podosphaera xanthii* isolate.
+
+## Compendium sections  
+
+   1. [Title page](P_xanthii_titlepage.html)  
+   2. [Data preparation and formatting](data_cleaning.html)  
+   3. [The influence of temperatures on P. xanthii conidia germination](Pxanthii_temperature.html)  
+   3. [The influence of VPD P. xanthii conidia germination and germtube formation](Pxanthii_vpd.html)  
+   
+   
 The data analysed in this repository was provided by Dr Zaiton Sapak.
-Data pulled in and cleaned was obtained from her Google Drive folders "Chapter 5- Conidial germination and Infection" and "SAS analysis".  
+The final formatted data can be found in the `\cache` folder of this compendium repository.
+<!-- Data pulled in and cleaned was obtained from her Google Drive folders "Chapter 5- Conidial germination and Infection" and "SAS analysis". -->  
 
 To clean the data we will need some R libraries for handling data and data manipulation.  
 
 ```{r libraries,message = FALSE}
-library(readxl)
-library(dplyr)
-library(data.table)
-library(units)
+library(readxl) # reading microsoft excel files
+library(dplyr) # Data manipulation and formatting
+library(data.table) # Data manipulation and formatting
+# install unpublished development version of R package `epiphytoolR`
 if("epiphytoolR" %in% names(installed.packages()[, "Package"]) == FALSE) {
   remotes::install_github(repo = "https://github.com/PaulMelloy/epiphytoolR",
                           ref = "dev",
@@ -55,6 +66,7 @@ setnames(germ_tm,
 
 # fill incubation period
 germ_tm[13:16,i_period := "48h"]
+
 # remove "h" and make column numeric
 germ_tm[,i_period := as.numeric(gsub("h","",germ_tm$i_period))]
 
@@ -102,6 +114,13 @@ germ_tm <- rbindlist(
       non_germ_conidia = rep(100, 4 * 4 *2))
    ), use.names = TRUE
 )
+```
+
+A quick check to look at column headers and the first 5 rows of data.  
+
+```{r}
+# inspect data
+head(germ_tm)
 ```
 
 
@@ -171,6 +190,13 @@ br_tm <- rbindlist(
 )
 ```
 
+A quick check to look at column headers and the first 5 rows of data.  
+
+```{r}
+# inspect data
+head(br_tm)
+```
+
 ```{r save_br_tm}
 fwrite(br_tm[order(Tm,branches, rep),], "cache/branching_temperature.csv")
 ```
@@ -181,7 +207,7 @@ fwrite(br_tm[order(Tm,branches, rep),], "cache/branching_temperature.csv")
 
 ## Experimental data on VPD  
 
-### Effect of vpd on germination  
+### Effect of VPD on germination  
 
 
 ```{r clean_germ_vpd}
@@ -225,6 +251,12 @@ setcolorder(germ_vpd,
 ```
 
 
+A quick check to look at column headers and the first 5 rows of data.  
+
+```{r}
+# inspect data
+head(germ_vpd)
+```
 
 
 ```{r save_g_vpd}
@@ -306,8 +338,17 @@ setnames(zero_branch,old = "V1", new = "conidia")
 
 # Bind and roder data containing non-germinated conidia as conidia with zero branches
 br_vpd <- rbind(br_vpd,zero_branch)[order(Tm,branches, rep)]
+```
 
+Before saving the data a quick data check is made to look at column headers and 
+the first 5 rows of data.  
 
+```{r}
+# inspect data
+head(br_vpd)
+```
+
+```{r}
 # save data into cache
 fwrite(x = br_vpd,
        file = "cache/branching_VPD.csv")
@@ -377,7 +418,17 @@ setcolorder(br_vpd2,
 # Bind and roder data containing non-germinated conidia as conidia with zero branches
 br_vpd2 <- rbind(br_vpd2,zero_branch)[order(Tm,branches, rep)]
 
+```
 
+Before saving the data a quick data check is made to look at column headers and 
+the first 5 rows of data.  
+
+```{r}
+# inspect data
+head(br_vpd2)
+```
+
+```{r}
 
 # save data into cache
 fwrite(x = br_vpd2,
@@ -442,7 +493,17 @@ setcolorder(br_vpd3[, c("Obs") := NULL],
 br_vpd3 <- rbind(br_vpd3, zero_branch)[order(Tm,branches, rep)]
 
 
+```
 
+Before saving the data a quick data check is made to look at column headers and 
+the first 5 rows of data.  
+
+```{r}
+# inspect data
+head(br_vpd3)
+```
+
+```{r}
 
 fwrite(br_vpd3,
        file = "cache/branching_VPD3.csv")
@@ -450,7 +511,24 @@ fwrite(br_vpd3,
 ```
 
 
+To describe how the methods were undertaken we need to determine how many leaf discs
+were inoculated and in how many runs. 
+Also how many were destructively sampled in each experiment.  
 
+```{r}
+n_dat <- 
+   data.table(
+   germ_tm = germ_tm[ , length(unique(leaf)), by = .(Tm, i_period)][,sum(V1)],
+   germ_vpd = germ_vpd[ , length(unique(rep)), by = .(vpd, i_period)][,sum(V1)],
+   br_tm = br_tm[, length(unique(rep)), by = .(Tm, rep)][,sum(V1)],
+   br_vpd = br_vpd[, length(unique(rep)), by = .(vpd, rep)][,sum(V1)],
+   br_vpd2 = br_vpd2[, length(unique(rep)), by = .(vpd, rep)][,sum(V1)],
+   br_vpd3 = br_vpd3[, length(unique(rep)), by = .(vpd, rep)][,sum(V1)]
+)
+
+
+t(n_dat)
+```
 
 
 
