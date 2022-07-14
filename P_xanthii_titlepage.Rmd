@@ -1,0 +1,43 @@
+---
+title: The influence of temperature and vapour pressure deficit on conidia germination
+  and germ tube production in an Australian *Podosphaera* *xanthii* isolate.
+description: |
+  Title page
+author:
+  - name: Paul Melloy 
+    url: https://paulmelloy.github.io/
+    affiliation: The University of Queensland
+date: "`r Sys.Date()`"
+output: distill::distill_article
+---
+
+# Research compendium  
+These webpages contain the R code used to produce the statistical analysis and Figures
+in the publication "The influence of temperature and vapour pressure deficit (VPD) on 
+conidia germination and germ tube production in an Australian _Podosphaera xanthii_
+isolate." 
+
+## Compendium sections  
+
+   1. [Title page](P_xanthii_titlepage.html)  
+   2. [Data preparation and formatting](data_cleaning.html)  
+   3. [The influence of temperatures on P. xanthii conidia germination](Pxanthii_temperature.html)  
+   3. [The influence of VPD P. xanthii conidia germination and germtube formation](Pxanthii_vpd.html)  
+   
+
+## Attributions  
+### Authors  
+
+   1. Dr. Zaiton Sapak$^{1,2}$  
+   2. Dr. Paul Melloy$^{2}$  
+   3. E.J. Minchinton$^{3}$  
+   4. Dr. Moin Salam$^{4}$  
+   5. Prof. Victor Galea$^{2}$  
+   
+### Author institutions  
+
+   1. Faculty of Plantation and Agrotechnology, Universiti Teknologi MARA (UiTM), Jasin Campus, 77300, Merlimau, Malaka, Malaysia  
+   2. School of Agriculture and Food Sciences, The University of Queensland, Gatton 4343, QLD, Australia;  
+   3. Department of Economic Development, Jobs, Transport and Resources, 475 Mickleham Road, Attwood, VIC 3047, Australia.  
+   4. Food and Agriculture Organization of the United Nations (FAO), FAO Representation in Bangladesh, House 37; Road  08; Dhanmondi R/A, Dhaka-1205, Bangladesh  
+   
