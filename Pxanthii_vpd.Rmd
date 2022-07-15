@@ -15,7 +15,10 @@ output:
       toc_depth: 3 
       toc_float: true 
 ---
-
+<style>
+body {
+text-align: justify}
+</style>
 
 ## Compendium sections  
 
@@ -24,10 +27,7 @@ output:
    3. [The influence of temperatures on P. xanthii conidia germination](Pxanthii_temperature.html)  
    3. [The influence of VPD P. xanthii conidia germination and germtube formation](Pxanthii_vpd.html)  
    
-   
-<br>  
-<br>  
-
+***  
 
 Load R libraries required for analysis
 
@@ -38,11 +38,12 @@ library(rstanarm) # Bayesian statistical models
 library(ggplot2) # graphing
 library(MASS) # logistical ordinal regression functions, among other things
 library(splines) # non-linear predictors
+library(flextable)
 source("R/p_star.R")
 ```
 <br>  
 
-## Impact of Vapour pressure deficit on *P. xanthii* germination  
+## Impact of vapour pressure deficit on *P. xanthii* germination  
 
 Read in data
 
@@ -95,23 +96,30 @@ and 25$^\circ$C temperature treatments.
 
 Let's look at the same data in terms of VPD split by time. 
 
-```{r plot_raw_timexVPD}
+```{r plot_raw_timexVPD, fig.width=6, fig.height=5}
 i_p_labs <-c("12 hours","24 hours","36 hours","48 hours")
 names(i_p_labs) <- c(12,24,36,48)
+g_vpd[, lty := fcase(Tm == 22, "dotted",
+                         Tm == 25, "dashed",
+                         Tm == 28, "twodash")]
 Figure_4 <- 
-   g_vpd |>
-   ggplot(aes(x = vpd, y = germ_n, colour = as.factor(Tm))) + 
+  g_vpd |>
+   ggplot(aes(x = vpd, y = germ_n,colour = factor(Tm))) + 
    geom_point()+
+   geom_smooth(method = "gam",
+               formula = y ~ bs(x,k=0.2),
+               size = 0.7,se = FALSE)+
+   scale_color_viridis_d()+
    facet_wrap(facets = c("i_period"), 
               labeller = labeller(i_period = i_p_labs))+
-   geom_smooth(method = "gam",formula = y ~ bs(x,k=0.2), alpha = 0.3, size = 0.8)+
-   scale_color_viridis_d()+
    xlab("Vapour pressure deficit (kPa)")+
    ylab("Germinated conidia (%)")+
    labs(colour = "Temperature")+
-   theme_classic()
+   theme_bw()+
+   theme(strip.background = element_rect(fill = "white"))
 Figure_4
 ```
+
 
 
 ```{r saveFig4, eval=FALSE, include=FALSE}
@@ -129,19 +137,20 @@ ggsave(
 
 Let's look at the same data in terms of VPD split by temperature. 
 
-```{r plot_raw_TmxVPD}
+```{r plot_raw_TmxVPD,layout="l-body-outset",  fig.width=10, fig.height=5}
 #i_p_labs <-c("12 hours","24 hours","36 hours","48 hours")
 # names(i_p_labs) <- c(12,24,36,48)
 g_vpd |>
    ggplot(aes(x = vpd, y = germ_n, colour = as.factor(i_period))) + 
    geom_point()+
-   facet_wrap(facets = c("Tm"))+
+   facet_wrap(facets = c("Tm"),nrow = 1)+
    geom_smooth(method = "gam",formula = y ~ bs(x,k=0.2), alpha = 0.3)+
    scale_color_viridis_d()+
    xlab("VPD")+
    ylab("Germinated conidia (%)")+
    labs(colour = "Incubation time")+
-   theme_classic()
+   theme_bw()+
+   theme(strip.background = element_rect(fill = "white"))
 ```
 
 
@@ -172,7 +181,7 @@ Particularly in the warmer treatments.
 
 ### VPD influence on germination - analysis
 
-Lets start the analysis with a simple model with smoothing terms on VPD, Temperature
+Lets start the analysis with a simple model with smoothing terms on VPD, temperature
 and infection period.
 We are using a binomial general additive model for all the germination analysis, 
 because it is binary count data. 
@@ -187,10 +196,10 @@ summary(m1v)
 plot(m1v)
 ```
 
-Overall the model fits very well with a R$^2$ of `r round(summary(m1v)$r.sq,4)`
-The splines on `Tm` and `i_period` were statistically significant, and seem well 
-fit and logical when we refer them to the raw data. 
-Warmer temperatures, from the three temperatures included (22,25 and 28$^\circ$C)
+Overall the model fits very well with a R$^2$ of `r round(summary(m1v)$r.sq,4)`.
+The splines on `Tm` and `i_period` were statistically significant, and seem to reflect
+the raw data. 
+Warmer temperatures, from the three temperatures included (22, 25 and 28$^\circ$C)
 lead to more conidia germinating.
 Incubation time also showed a positive relationship with the number of germinated 
 conidia, ie. the longer the incubation the more conidia were likely to have germinated. 
@@ -208,7 +217,7 @@ plot(m2v)
 
 This shows only a small improvement and a decreasing trend in the VPD plot.  
 
-Next lets try more VPD knots.  
+Next lets try more VPD spline knots.  
 
 ```{r m3v}
 m3v <- gam(cbind(germ_n,non_germ_n) ~ s(vpd, k = 7, bs = "ps") + s(Tm, k = 3) + s(i_period, k = 3), 
@@ -218,12 +227,15 @@ summary(m3v)
 plot(m3v)
 ```
 
-While there exists a lot of willingness in the gam, the vpd plot shows the increase in germination in at around 1.5 kPa and the rapid decrease in germination between the saturated treatments (0.026 - 0.038 kPa) and the next highest humidity (0.158 - 0.189 kpa).
-This model also provides a high R-squared (`r round(summary(m3v)$r.sq,4)`), low UBRE `r round(m3v$gcv.ubre,3)`, indicating good predictive ability
-and less affected by drop one, tests.
+While there exists a lot of willingness in the gam, the vpd plot shows the increase 
+in germination around 1.5 kPa and a rapid decrease in germination between the saturated 
+treatments (0.026 - 0.038 kPa), and the next highest humidity (0.158 - 0.189 kpa).
+This model also provides a high R-squared (`r round(summary(m3v)$r.sq,4)`) and 
+low UBRE `r round(m3v$gcv.ubre,3)`, indicating good predictive ability while being 
+less affected by drop one, tests.
 
-Temperature does not seem like it needs a non-linear terms and test to see if there
-is any significant changes.  
+Temperature does not seem like it needs a non-linear term. The next model will 
+test this assumption.  
 
 ```{r}
 m4v <- gam(cbind(germ_n,non_germ_n) ~ s(vpd, k = 7) + Tm + s(i_period,k=3), 
@@ -233,9 +245,12 @@ summary(m4v)
 plot(m4v)
 ```
 
-The wiggliness of the curve seems above 0.5 kPa seems to be more pronounced in warmer
-temperature treatments. 
-To evaluate if this is the case lets look at a temperature VPD interaction.  
+There is a slight reduction in the model fit, as shown by the difference in the 
+R$^2$ and UBRE values between m3v and m4v.
+
+In addition the wiggliness of the vpd curve seems more pronounced. 
+We will next evaluate if there is an interaction between VPD and temperature, which
+should also help us decide if temperature should be a linear or non-linear term.  
 
 
 ```{r}
@@ -245,14 +260,14 @@ m5v <- gam(cbind(germ_n,non_germ_n) ~ te(vpd,Tm, k = 3)+ s(i_period,k=3),
 summary(m5v)
 anova(m4v,m5v)
 ```
-This comparison shows no interaction between temperature and VPD reduces the fit 
-of the model.  
+This comparison shows while the interaction between temperature is significant,
+the m5v model does not fit the data as well as m4v .  
 
-Because of the rapid drop in germination between the lower VPD range, and little change 
+Because of the rapid drop in germination in the lower VPD range, and little change 
 between the higher VPD treatments, it is difficult to fit a non-linear model with 
 evenly spaced splines. 
 Also we don't have enough evenly spaced VPD treatments to increase the number of 
-knots without causing an overfit model. 
+knots without causing an over fit model. 
 We can override this default behaviour of splines placed at set points by specifying 
 our own knot points.  
 
@@ -272,32 +287,24 @@ plot(m6v)
 
 vis.gam(m6v,
         phi = 20,
-        theta = 30,
+        theta = 40,
         view = c("vpd","Tm"),
-        #cond = list(i_period = 48),
-        main = "48 hours")
+        )
 ```
 
 This model presents the best fit model so far, as shown by the R$^2$ value of `r round(summary(m6v)$r.sq,4)`,
 `r round(summary(m6v)$dev.exp,4)*100`% deviance explained and `r summary(m6v)$sp.criterion`UBRE.  
 
-Let's compare the model against the others.  
+Let's compare the models side-by-side using the 'Akaike Information Criterion' (AIC).
+A lower number is generally viewed as indicating a better model fit.  
 
 ```{r}
-anova(m2v,m3v)
-anova(m3v,m4v)
-anova(m4v,m6v)
 AIC(m1v,m2v,m3v, m4v, m5v, m6v)
 ```
 
 Model six (`m6v`) shows the best fit to the raw data plotted in Figure 4.   
 
 ```{r}
-# overall model
-vis.gam(m6v,
-        phi = 20,
-        theta = 45)
-
 # subset by incubation time
 par(mfrow = c(2,2),
     oma = c(0,0,0,0),
@@ -330,9 +337,9 @@ vis.gam(m6v,
 par(mfrow = c(1,1))
 ```
 
+***  
 
-
-### Impact of VPD on *P. xanthii* branching  
+## Impact of VPD on *P. xanthii* branching  
 
 Import the clean data
 
@@ -341,48 +348,45 @@ Import the clean data
 b_vpd <- fread("cache/branching_vpd.csv")[, exp := 1]
 b_vpd2 <- fread("cache/branching_VPD2.csv")[,exp := 2]
 b_vpd3 <- fread("cache/branching_VPD3.csv")[,exp := 3]
-
-unique(b_vpd[,.(vpd,RH,Tm)])
-unique(b_vpd2[,.(vpd,RH,Tm)])
-unique(b_vpd3[,.(vpd,RH,Tm)])
-summary(b_vpd2)
-summary(b_vpd3)
 ```
 
-<br>  
-<br>  
-
-## Impact of Temperature on *P. xanthii* germination  
 There were three data-sets which recorded germtube formation at a range of VPD. 
 
-Lets look at the data.  
+Lets look at the summaries of the data.  
 
-```{r data_peek_br}
-# Experiment 1
-str(b_vpd)
+```{r}
+rmarkdown::paged_table(b_vpd[, list(
+   Mean = mean(conidia),
+   Std_dev = round(sd(conidia), 3),
+   Median = median(conidia),
+   Range = paste0(range(conidia), collapse = " - "),
+   Replicates = .N),
+   by = .(vpd, Tm, germtubes)])
 
-# Experiment 2
-str(b_vpd2)
 
-# Experiment 3
-str(b_vpd3)
+rmarkdown::paged_table(b_vpd2[, list(
+   Mean = mean(conidia),
+   Std_dev = round(sd(conidia), 3),
+   Median = median(conidia),
+   Range = paste0(range(conidia), collapse = " - "),
+   Replicates = .N),
+   by = .(vpd, Tm, germtubes)])
+
+
+rmarkdown::paged_table(b_vpd3[, list(
+   Mean = mean(conidia),
+   Std_dev = round(sd(conidia), 3),
+   Median = median(conidia),
+   Range = paste0(range(conidia), collapse = " - "),
+   Replicates = .N),
+   by = .(vpd, Tm, germtubes)])
+
 ```
+
 <br>  
 
+We will combine the data into one object to interrogate.  
 
-```{r eval=FALSE, include=FALSE}
-# Look at a summary of the data  
-b_vpd[, list(n = mean(conidia)),
-      by = list(vpd, Tm, germtubes)][order(vpd,Tm)]
-
-b_vpd2[ ,list(n = mean(conidia)),
-      by = list(vpd, Tm, germtubes)][order(vpd,Tm)]
-
-b_vpd3[ ,list(n = mean(conidia)),
-      by = list(vpd, Tm, germtubes)][order(vpd,Tm)]
-```
-
-We will combine the data into one object to interegate.  
 ```{r bv_combine}
 b_v <-rbind(b_vpd,b_vpd2,b_vpd3)
 ```
@@ -411,9 +415,10 @@ b_v |>
    scale_y_continuous(limits = c(0,120), breaks = c(0,25,50,75,100))
 ```
 <br>  
-Each experiment has similar trends and different variation for each vpd.  
-<br>  
-Next lets consolidate all the experimental data together
+Each experiment has similar trends and different variation for each vpd probably
+due to the temperature incubation.  
+
+Next lets look at a consolidated graph with all the experimental reps together.  
 
 ```{r plot_br_vpd}
 b_v[,percent := (conidia/sum(conidia))*100,
@@ -450,7 +455,7 @@ ggsave(
 )
 ```
 
-What is the mean differences between the most saturated treatments 0.026 - 0.038 and
+What is the mean difference between the most saturated treatments 0.026 - 0.038 and
 the next highest saturated treatments 0.132 - 0.186?  
 
 ```{r VPDiff}
