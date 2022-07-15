@@ -460,7 +460,7 @@ infection by a single conidia.
 The response variable might be thought of as continuous. 
 However, given our aim is to estimate successful infection by the pathogen by proxy 
 of germ tube production, estimating the number of germ tubes and hyphae 
-beyond three is irrelavant and provide inaccurate results, given the difference between
+beyond three is irrelevant and provide inaccurate results, given the difference between
 the number of germtubes may not be equal or consistent between levels.
 `germtubes` would be better characterised as ordinal and therefore leads us to using
 *ordinal logistic regression* methods.  
@@ -589,7 +589,7 @@ m2_pred |>
 This plot looks like it would fit the raw data much better than `m1`.
 However, the model estimates 25$^\circ$C as the temperature likely to produce
 a greater proportion of germinated conidia with three germ-tubes. 
-This does not refelct the raw data we plotted in figure 2b.  
+This does not reflect the raw data we plotted in figure 2b.  
 
 #### Model 3 - Temperature effect on germ-tube production  
 

@@ -138,8 +138,6 @@ ggsave(
 Let's look at the same data in terms of VPD split by temperature. 
 
 ```{r plot_raw_TmxVPD,layout="l-body-outset",  fig.width=10, fig.height=5}
-#i_p_labs <-c("12 hours","24 hours","36 hours","48 hours")
-# names(i_p_labs) <- c(12,24,36,48)
 g_vpd |>
    ggplot(aes(x = vpd, y = germ_n, colour = as.factor(i_period))) + 
    geom_point()+
@@ -202,7 +200,7 @@ the raw data.
 Warmer temperatures, from the three temperatures included (22, 25 and 28$^\circ$C)
 lead to more conidia germinating.
 Incubation time also showed a positive relationship with the number of germinated 
-conidia, ie. the longer the incubation the more conidia were likely to have germinated. 
+conidia, i.e.. the longer the incubation the more conidia were likely to have germinated. 
 VPD also was a significant predictor however the wiggliness might be able to be improved.  
 
 As earlier, lets try and reduce the willingness by using P-splines.  
@@ -227,9 +225,9 @@ summary(m3v)
 plot(m3v)
 ```
 
-While there exists a lot of willingness in the gam, the vpd plot shows the increase 
+While there exists a lot of willingness in the gam, the VPD plot shows the increase 
 in germination around 1.5 kPa and a rapid decrease in germination between the saturated 
-treatments (0.026 - 0.038 kPa), and the next highest humidity (0.158 - 0.189 kpa).
+treatments (0.026 - 0.038 kPa), and the next highest humidity (0.158 - 0.189 kPa).
 This model also provides a high R-squared (`r round(summary(m3v)$r.sq,4)`) and 
 low UBRE `r round(m3v$gcv.ubre,3)`, indicating good predictive ability while being 
 less affected by drop one, tests.
@@ -248,7 +246,7 @@ plot(m4v)
 There is a slight reduction in the model fit, as shown by the difference in the 
 R$^2$ and UBRE values between m3v and m4v.
 
-In addition the wiggliness of the vpd curve seems more pronounced. 
+In addition the wiggliness of the VPD curve seems more pronounced. 
 We will next evaluate if there is an interaction between VPD and temperature, which
 should also help us decide if temperature should be a linear or non-linear term.  
 
@@ -350,7 +348,7 @@ b_vpd2 <- fread("cache/branching_VPD2.csv")[,exp := 2]
 b_vpd3 <- fread("cache/branching_VPD3.csv")[,exp := 3]
 ```
 
-There were three data-sets which recorded germtube formation at a range of VPD. 
+There were three data-sets which recorded germ-tube formation at a range of VPD. 
 
 Lets look at the summaries of the data.  
 
@@ -415,7 +413,7 @@ b_v |>
    scale_y_continuous(limits = c(0,120), breaks = c(0,25,50,75,100))
 ```
 <br>  
-Each experiment has similar trends and different variation for each vpd probably
+Each experiment has similar trends and different variation for each VPD probably
 due to the temperature incubation.  
 
 Next lets look at a consolidated graph with all the experimental reps together.  
@@ -596,20 +594,20 @@ m2_plot |>
 There is a consistent effect of temperature that increases the number of germinated
 and branching germ-tubes. 
 Low VPD has a strong effect on the number and proportion of branching germtubes.
-While the number of germinated conidia and germtube branching decreases rapidly as 
+While the number of germinated conidia and germ tube branching decreases rapidly as 
 VPD increases, however after 0.5 kPa, the proportion of germinating and branching 
 conidia stabilise all the way up to 2 kPa.  
 
 Lets look at just VPD and drop the temperature effect.
 
 ```{r}
-# resummarise the three experiments into one without looking at temperatures
+# re-summarise the three experiments into one without looking at temperatures
 m2_plot <- m2_pred[,.(prob = mean(predicted),
            CI_l = mean(CI_low),
            CI_h = mean(CI_high)),
            by= .(vpd, germtubes)]
 
-# plot with confindence intervals
+# plot with confidence intervals
 Figure_5b <- 
    m2_plot |>
    ggplot(aes(x = vpd, y = prob, colour = germtubes))+
@@ -691,7 +689,7 @@ probs$predicted + 1.96*probs$std.error
 # Alternatively, use non-parametric bootstrapped confidence intervals.
 # note that this does not adjust the weights to a constant sum for
 # each bootstrap, although it is easy to implement. You're free to
-# determine how to handle the weights, including resampling based 
+# determine how to handle the weights, including re-sampling based 
 # on the weights.
 
 # Generate bootstrapped data.frames

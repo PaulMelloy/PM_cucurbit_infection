@@ -94,8 +94,8 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 
 
   <!--  https://schema.org/Article -->
-  <meta property="article:published" itemprop="datePublished" content="2022-07-14" />
-  <meta property="article:created" itemprop="dateCreated" content="2022-07-14" />
+  <meta property="article:published" itemprop="datePublished" content="2022-07-15" />
+  <meta property="article:created" itemprop="dateCreated" content="2022-07-15" />
   <meta name="article:author" content="Paul Melloy" />
 
   <!--  https://developers.facebook.com/docs/sharing/webmasters#markup -->
@@ -113,7 +113,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
   <!--radix_placeholder_rmarkdown_metadata-->
 
   <script type="text/json" id="radix-rmarkdown-metadata">
-  {"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["title","description","author","date","output"]}},"value":[{"type":"character","attributes":{},"value":["Data preparation and formatting."]},{"type":"character","attributes":{},"value":["Data analysis for paper\n"]},{"type":"list","attributes":{},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","url","affiliation"]}},"value":[{"type":"character","attributes":{},"value":["Paul Melloy"]},{"type":"character","attributes":{},"value":["https://paulmelloy.github.io/"]},{"type":"character","attributes":{},"value":["The University of Queensland"]}]}]},{"type":"character","attributes":{},"value":["2022-07-14"]},{"type":"character","attributes":{},"value":["distill::distill_article"]}]}
+  {"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["title","description","author","date","output"]}},"value":[{"type":"character","attributes":{},"value":["Data preparation and formatting."]},{"type":"character","attributes":{},"value":["Data analysis for paper\n"]},{"type":"list","attributes":{},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","url","affiliation"]}},"value":[{"type":"character","attributes":{},"value":["Paul Melloy"]},{"type":"character","attributes":{},"value":["https://paulmelloy.github.io/"]},{"type":"character","attributes":{},"value":["The University of Queensland"]}]}]},{"type":"character","attributes":{},"value":["2022-07-15"]},{"type":"character","attributes":{},"value":["distill::distill_article"]}]}
   </script>
   <!--/radix_placeholder_rmarkdown_metadata-->
   
@@ -2504,7 +2504,7 @@ distill-header .nav a {
 <!--radix_placeholder_front_matter-->
 
 <script id="distill-front-matter" type="text/json">
-{"title":"Data preparation and formatting.","description":"Data analysis for paper","authors":[{"author":"Paul Melloy","authorURL":"https://paulmelloy.github.io/","affiliation":"The University of Queensland","affiliationURL":"#","orcidID":""}],"publishedDate":"2022-07-14T00:00:00.000+10:00","citationText":"Melloy, 2022"}
+{"title":"Data preparation and formatting.","description":"Data analysis for paper","authors":[{"author":"Paul Melloy","authorURL":"https://paulmelloy.github.io/","affiliation":"The University of Queensland","affiliationURL":"#","orcidID":""}],"publishedDate":"2022-07-15T00:00:00.000+10:00","citationText":"Melloy, 2022"}
 </script>
 
 <!--/radix_placeholder_front_matter-->
@@ -2524,7 +2524,7 @@ distill-header .nav a {
   Paul Melloy <a href="https://paulmelloy.github.io/" class="uri">https://paulmelloy.github.io/</a> (The University of
 Queensland)
   
-<br />2022-07-14
+<br />2022-07-15
 </div>
 
 <div class="d-article">
@@ -2553,7 +2553,7 @@ of this compendium repository.
 data manipulation.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
-<pre class="sourceCode r"><code class="sourceCode r"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://readxl.tidyverse.org">readxl</a></span><span class="op">)</span> <span class="co"># reading microsoft excel files</span>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://readxl.tidyverse.org">readxl</a></span><span class="op">)</span> <span class="co"># reading Microsoft excel files</span>
 <span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org">dplyr</a></span><span class="op">)</span> <span class="co"># Data manipulation and formatting</span>
 <span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://r-datatable.com">data.table</a></span><span class="op">)</span> <span class="co"># Data manipulation and formatting</span>
 <span class="co"># install unpublished development version of R package `epiphytoolR`</span>
@@ -2685,7 +2685,7 @@ branch and possibly develop infection structures.</p>
 <span class="co"># cut out non-data lines</span>
 <span class="va">br_tm</span> <span class="op">&lt;-</span> <span class="va">br_tm</span><span class="op">[</span><span class="op">-</span><span class="fl">2</span><span class="op">]</span>
 
-<span class="co">#write it to csv so it can be read back in cand formatted to a data.frame instead of vector.</span>
+<span class="co">#write it to csv so it can be read back in and formatted to a data.frame instead of vector.</span>
 <span class="fu"><a href="https://rdrr.io/r/base/write.html">write</a></span><span class="op">(</span><span class="va">br_tm</span>, <span class="st">&quot;cache/Tm_germtubes.csv&quot;</span><span class="op">)</span>
 
 <span class="co"># read in data using fread</span>
@@ -2893,7 +2893,7 @@ deficit effect on branching</h3>
 <span class="co"># rename column</span>
 <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/setattr.html">setnames</a></span><span class="op">(</span><span class="va">zero_branch</span>,old <span class="op">=</span> <span class="st">&quot;V1&quot;</span>, new <span class="op">=</span> <span class="st">&quot;conidia&quot;</span><span class="op">)</span>
 
-<span class="co"># Bind and roder data containing non-germinated conidia as conidia with zero germtubes</span>
+<span class="co"># Bind and order data containing non-germinated conidia as conidia with zero germtubes</span>
 <span class="va">br_vpd</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/rbindlist.html">rbind</a></span><span class="op">(</span><span class="va">br_vpd</span>,<span class="va">zero_branch</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/setorder.html">order</a></span><span class="op">(</span><span class="va">Tm</span>,<span class="va">germtubes</span>, <span class="va">rep</span><span class="op">)</span><span class="op">]</span>
 </code></pre>
 </div>
@@ -2982,7 +2982,7 @@ headers and the first 5 rows of data.</p>
 <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/setcolorder.html">setcolorder</a></span><span class="op">(</span><span class="va">br_vpd2</span>,
             neworder <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;vpd&quot;</span>, <span class="st">&quot;RH&quot;</span>,<span class="st">&quot;Tm&quot;</span>, <span class="st">&quot;germtubes&quot;</span>,<span class="st">&quot;rep&quot;</span>,<span class="st">&quot;conidia&quot;</span><span class="op">)</span><span class="op">)</span>
 
-<span class="co"># Bind and roder data containing non-germinated conidia as conidia with zero germtubes</span>
+<span class="co"># Bind and order data containing non-germinated conidia as conidia with zero germtubes</span>
 <span class="va">br_vpd2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/rbindlist.html">rbind</a></span><span class="op">(</span><span class="va">br_vpd2</span>,<span class="va">zero_branch</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/setorder.html">order</a></span><span class="op">(</span><span class="va">Tm</span>,<span class="va">germtubes</span>, <span class="va">rep</span><span class="op">)</span><span class="op">]</span>
 </code></pre>
 </div>
@@ -3064,7 +3064,7 @@ on germtube branching under different vpd</h3>
 <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/setcolorder.html">setcolorder</a></span><span class="op">(</span><span class="va">br_vpd3</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;Obs&quot;</span><span class="op">)</span> <span class="op">:=</span> <span class="cn">NULL</span><span class="op">]</span>,
             neworder <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;vpd&quot;</span>, <span class="st">&quot;RH&quot;</span>, <span class="st">&quot;Tm&quot;</span>, <span class="st">&quot;germtubes&quot;</span>,<span class="st">&quot;rep&quot;</span>,<span class="st">&quot;conidia&quot;</span><span class="op">)</span><span class="op">)</span>
 
-<span class="co"># Bind and roder data containing non-germinated conidia as conidia with zero germtubes</span>
+<span class="co"># Bind and order data containing non-germinated conidia as conidia with zero germtubes</span>
 <span class="va">br_vpd3</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/rbindlist.html">rbind</a></span><span class="op">(</span><span class="va">br_vpd3</span>, <span class="va">zero_branch</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/setorder.html">order</a></span><span class="op">(</span><span class="va">Tm</span>,<span class="va">germtubes</span>, <span class="va">rep</span><span class="op">)</span><span class="op">]</span>
 </code></pre>
 </div>

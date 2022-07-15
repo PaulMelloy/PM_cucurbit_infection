@@ -27,7 +27,7 @@ The final formatted data can be found in the `\cache` folder of this compendium 
 To clean the data we will need some R libraries for handling data and data manipulation.  
 
 ```{r libraries,message = FALSE}
-library(readxl) # reading microsoft excel files
+library(readxl) # reading Microsoft excel files
 library(dplyr) # Data manipulation and formatting
 library(data.table) # Data manipulation and formatting
 # install unpublished development version of R package `epiphytoolR`
@@ -146,7 +146,7 @@ br_tm <- readLines("data/tempvs.branching(results).sas")[3:40]
 # cut out non-data lines
 br_tm <- br_tm[-2]
 
-#write it to csv so it can be read back in cand formatted to a data.frame instead of vector.
+#write it to csv so it can be read back in and formatted to a data.frame instead of vector.
 write(br_tm, "cache/Tm_germtubes.csv")
 
 # read in data using fread
@@ -336,7 +336,7 @@ zero_branch[,V1 := fifelse(V1 < 0, 0, V1)]
 # rename column
 setnames(zero_branch,old = "V1", new = "conidia")
 
-# Bind and roder data containing non-germinated conidia as conidia with zero germtubes
+# Bind and order data containing non-germinated conidia as conidia with zero germtubes
 br_vpd <- rbind(br_vpd,zero_branch)[order(Tm,germtubes, rep)]
 ```
 
@@ -415,7 +415,7 @@ setnames(zero_branch,old = "V1", new = "conidia")
 setcolorder(br_vpd2,
             neworder = c("vpd", "RH","Tm", "germtubes","rep","conidia"))
 
-# Bind and roder data containing non-germinated conidia as conidia with zero germtubes
+# Bind and order data containing non-germinated conidia as conidia with zero germtubes
 br_vpd2 <- rbind(br_vpd2,zero_branch)[order(Tm,germtubes, rep)]
 
 ```
@@ -489,7 +489,7 @@ setnames(zero_branch,old = "V1", new = "conidia")
 setcolorder(br_vpd3[, c("Obs") := NULL],
             neworder = c("vpd", "RH", "Tm", "germtubes","rep","conidia"))
 
-# Bind and roder data containing non-germinated conidia as conidia with zero germtubes
+# Bind and order data containing non-germinated conidia as conidia with zero germtubes
 br_vpd3 <- rbind(br_vpd3, zero_branch)[order(Tm,germtubes, rep)]
 
 
