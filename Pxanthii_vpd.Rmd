@@ -455,49 +455,17 @@ ggsave(
 )
 ```
 
-What is the mean difference between the most saturated treatments 0.026 - 0.038 and
-the next highest saturated treatments 0.132 - 0.186?  
-
-```{r VPDiff}
-# Temperature 22C
-b_v[vpd == 0.026 &
-       germtubes == 3, sum(percent)] -
-   b_v[vpd == 0.132 &
-       germtubes == 3, sum(percent)]
-
-# Temperature 25C
-b_v[vpd == 0.032 &
-       germtubes == 3, sum(percent)] -
-   b_v[vpd == 0.158 &
-       germtubes == 3, sum(percent)]
-
-# Temperature 28C
-b_v[vpd == 0.038 &
-       germtubes == 3, sum(percent)] -
-   b_v[vpd == 0.189 &
-       germtubes == 3, sum(percent)]
-
-```
-
 
 ### Analysis of conidial germination and germtube proliferation
 In order to analyse the data we need to convert the data to a longer format, where
 each row represents an observation.
 
 ```{r model_1}
-b_vpd_lng <-
-   rbindlist(apply(b_v, 1 , function(x) {
-      rbindlist(lapply(seq_len(x["conidia"]), function(x2) {
-         as.data.frame(t(x[c(1:4,6,7)]))
-      })
-      )
-   }))
-
-b_vpd_lng[, c("exp",
+b_v[, c("exp",
               "rep",
               "germtubes",
               "cham",
-              "vpd") := list(as.integer(exp),
+              "vpd") := list(as.factor(exp),
                              as.integer(rep),
                              as.ordered(germtubes),
                              paste0(Tm, RH),
@@ -508,7 +476,9 @@ b_vpd_lng[, c("exp",
 Test change
 
 ```{r}
-m1 <- polr(germtubes ~ vpd + Tm+exp, data = b_vpd_lng, Hess = TRUE)
+m1 <- polr(germtubes ~ vpd + Tm + exp, 
+           weights = conidia,
+           data = b_v, Hess = TRUE)
 
 summary(m1)
 ```
@@ -523,12 +493,12 @@ test_dat <- data.table(Tm = rep(seq(from = 22, to = 28, by = 1),
                                 times = 3), # between 5 and 8 degrees
                        vpd = rep(seq(from = 0.020, to = 2.57, by = 0.01),
                                  times = 7*3),
-                       exp = rep(1:3,
-                                 each = 7*256)
+                       exp = as.factor(rep(1:3,
+                                 each = 7*256))
                        )
 ```
 
-```{r, fig.dim=c(7,10)}
+```{r, ,  fig.width=7, fig.height=10}
 # create a data.frame with predicted values and reference them to the respective temperature
 m1_pred <-
    as.data.table(cbind(test_dat,
@@ -547,6 +517,7 @@ m1_pred <-
       value.name = "prob"
    )
 
+# Plot the predicted model
 m1_pred |>
    ggplot(aes(x = vpd, y = prob, colour = germtubes))+
    facet_grid(rows = vars(Tm), cols = vars(exp))+
@@ -554,8 +525,13 @@ m1_pred |>
    theme_minimal()
 ```
 There is a lot going on in this graph but as the `m1` summary shows experimental rep,
-temperature and VPD were all significant. For ease in interpretation, lets look at 
-a consolidated plot.  
+temperature and VPD were all significant. 
+While there might be a difference in the predicted values between experiments, 
+the trends are the same.
+Nothing drastically different is happening between experimental rep which justifies
+keeping them separate.
+For ease in interpretation, lets look at a consolidated plot, taking the mean of 
+each experiment.  
 
 ```{r}
 m1_pred[,.(prob = mean(prob)),by= .(vpd,germtubes)] |>
@@ -567,40 +543,54 @@ m1_pred[,.(prob = mean(prob)),by= .(vpd,germtubes)] |>
 
 
 <br>  
-Model two we will investigate whether there is an interaction between temperature 
-and infection period.  
+Model one tells us a bit about the influence of the VPD and temperature variables
+but the model in the graph above does not fit our data very well.
+Model two we will try fit the model to our observations by using a basis spline on
+our VPD variable.  
 
 ```{r model_2}
-m2 <- polr(germtubes ~ bs(vpd,knots = 0.5) + Tm + exp, data = b_vpd_lng, Hess = TRUE)
+m2 <- polr(germtubes ~ bs(vpd,knots = 0.5) + Tm + exp, 
+           weights = conidia, 
+           data = b_v, Hess = TRUE)
 summary(m2)
 ```
 Let's predict from this model to consider it's performance.
 
 
-```{r}
+```{r fig.width=5, fig.height=7}
 # create a data.frame with predicted values and reference them to the respective temperature
-m2_pred <-
-   as.data.table(cbind(test_dat,
-                       round(predict(m2,
-                                     test_dat,
-                                     type = "p"),
-                             3)))
+m2_pred <- marginaleffects::predictions(m2,
+                                        newdata = test_dat,
+                                        type = "probs")
+# set data.table format
+setDT(m2_pred)
 
-# format to long 
-m2_pred <-
-   melt(
-      m2_pred,
-      id.vars = c("Tm","vpd","exp"),
-      measure.vars = c("0", "1", "2", "3"),
-      variable.name = "germtubes",
-      value.name = "prob"
-   )
+# calculate approximate confidence intervals
+m2_pred[, CI_low := .(predicted - 1.96*std.error)]
+m2_pred[, CI_high := .(predicted + 1.96*std.error)]
 
-m2_pred[,.(prob = mean(prob)),by= .(vpd,Tm,germtubes)] |>
+# change the column names
+setnames(m2_pred,
+         old = c("group","Tm.x","vpd.x"),
+         new = c("germtubes", "Tm", "vpd"))
+
+# summarise the 3 experiments into one
+m2_plot <- m2_pred[,.(prob = mean(predicted),
+           CI_l = mean(CI_low),
+           CI_h = mean(CI_high)),
+           by= .(vpd,Tm, germtubes)]
+
+m2_plot |>
    ggplot(aes(x = vpd, y = prob, colour = germtubes))+
-   facet_wrap(facets = vars(Tm))+
-   geom_line(size = 1)+
+   geom_line(size = 0.7)+
+   facet_wrap(facets = vars(Tm), ncol = 2)+
+   geom_line(data = m2_plot, aes(x = vpd, y = CI_l, #colour = group,
+                                 ), linetype = "dotted", size = 0.6)+
+   geom_line(data = m2_plot, aes(x = vpd, y = CI_h, #colour = germtubes,
+                                 ), linetype = "dotted", size = 0.6)+
    theme_minimal()
+
+
 ```
 
 There is a consistent effect of temperature that increases the number of germinated
@@ -613,17 +603,28 @@ conidia stabilise all the way up to 2 kPa.
 Lets look at just VPD and drop the temperature effect.
 
 ```{r}
+# resummarise the three experiments into one without looking at temperatures
+m2_plot <- m2_pred[,.(prob = mean(predicted),
+           CI_l = mean(CI_low),
+           CI_h = mean(CI_high)),
+           by= .(vpd, germtubes)]
+
+# plot with confindence intervals
 Figure_5b <- 
-   m2_pred[,.(prob = mean(prob)),by= .(vpd,germtubes)] |>
+   m2_plot |>
    ggplot(aes(x = vpd, y = prob, colour = germtubes))+
-   #facet_wrap(facets = vars(Tm))+
-   geom_line(size = 1)+
+   geom_line(size = 0.7)+
+   geom_line(data = m2_plot, aes(x = vpd, y = CI_l, colour = germtubes,
+                                 ), linetype = "dotted", size = 0.6)+
+   geom_line(data = m2_plot, aes(x = vpd, y = CI_h, colour = germtubes,
+                                 ), linetype = "dotted", size = 0.6)+
    theme_minimal() + 
    annotate("text", x = 0.01, y = 0.98, label = "(b)", size =5)+
-   scale_colour_viridis_d(direction = -1)+
+   scale_color_grey(start = 0.8, end = 0.3)+
    xlab("Vapour pressure deficit (kPa)")+
    ylab("Proportional probability")+
    labs(colour = "Germ tubes")
+
 Figure_5b
 ```
 
@@ -653,43 +654,72 @@ coef_table[, p_value := pnorm(abs(`t value`),lower.tail = FALSE) *2][, sig := p_
 coef_table
 ```
 
+```{r}
+# Packages
+library(MASS)
+library(marginaleffects)
+library(dplyr)
 
+# Create a test set
+N <- 4
+test_dat <- data.frame(
+  Infl = factor(rep("Low", N)),
+  Type = unique(housing$Type),
+  Cont = factor(rep("Low", N))
+)
 
-## Baysian approach  
+# Fit ordered logistic regression model
+house.plr <- polr(Sat ~ Infl + Type + Cont, 
+                  weights = Freq, 
+                  data = housing,
+                  Hess = TRUE)
 
-```{r install_stan, include=FALSE}
-#install.packages("rstanarm")
-library(rstanarm)
-library(bayesplot)
+# Demonstrate that predict() doesn't provide any measure of variability
+# for the predicted class probabilities, as shown in question
+predict(house.plr, test_dat, type = "probs")
+
+# Use the marginaleffects package to get delta method standard errors for
+# each predicted probability
+probs <- marginaleffects::predictions(house.plr, 
+                                      newdata = test_dat,
+                                      type = "probs")
+
+# Compute CIs from the standard error using normal approximation
+probs$predicted - 1.96*probs$std.error
+probs$predicted + 1.96*probs$std.error
+
+# Alternatively, use non-parametric bootstrapped confidence intervals.
+# note that this does not adjust the weights to a constant sum for
+# each bootstrap, although it is easy to implement. You're free to
+# determine how to handle the weights, including resampling based 
+# on the weights.
+
+# Generate bootstrapped data.frames
+set.seed(123)
+sims <- 5
+samples <- vector(mode = "list", length = sims)
+samples <- lapply(samples, function(x){ slice_sample(housing, n = nrow(housing), replace = TRUE)})
+
+# Fit model on each bootstrapped data.frame
+models <- lapply(samples, function(x){polr(Sat ~ Infl + Type + Cont, 
+                                           weights = Freq, 
+                                           data = x,
+                                           Hess = TRUE)})
+
+# Get test predictions into a data.frame
+probs_boot <- lapply(models, function(x) {
+  marginaleffects::predictions(x,
+                               newdata = test_dat,
+                               type = "probs")
+})
+
+probs_boot_df <- bind_rows(probs_boot)
+
+# Compute CIs
+probs_boot_df %>% 
+  group_by(group, Type.x, Infl, Type.y, Cont) %>%
+  summarise(ci_low = quantile(predicted, probs = 0.025),
+            ci_high = quantile(predicted, probs = 0.975))
+
 ```
 
-```{r, include=FALSE}
-# fit1 <- stan_gamm4(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k = 3) + s(Tm, k = 6, bs = "ps"), 
-#                    data = g_tm, family = "binomial", chains = 1)
-# 
-# plot_nonlinear(fit1)
-# 
-# m5 <- gam(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k=3) + s(Tm, k =4, bs = "ps"),
-#           data = g_tm,
-#           family = "binomial",
-# )
-# 
-# prior_summary(fit1)
-# summary(fit1)
-# mcmc_areas(as.matrix(fit1),
-#            pars = "Tm",
-#            prob = 0.95)
-# pp_check(fit1,"stat")
-```
-
-
-```{r, include=FALSE}
-# g_vpd %>%
-#   mutate(germ = germ_n/(non_germ_n + germ_n)) %>%
-#   group_by(vpd,i_period) %>%
-#   summarise(m_germ = mean(germ),
-#             Tm= unique(Tm)) %>%
-#    filter(i_period == 12 &
-#              vpd > 0.13) %>%
-#    summary()
-```
