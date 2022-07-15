@@ -357,13 +357,13 @@ str(b_vpd3)
 ```{r eval=FALSE, include=FALSE}
 # Look at a summary of the data  
 b_vpd[, list(n = mean(conidia)),
-      by = list(vpd, Tm, branches)][order(vpd,Tm)]
+      by = list(vpd, Tm, germtubes)][order(vpd,Tm)]
 
 b_vpd2[ ,list(n = mean(conidia)),
-      by = list(vpd, Tm, branches)][order(vpd,Tm)]
+      by = list(vpd, Tm, germtubes)][order(vpd,Tm)]
 
 b_vpd3[ ,list(n = mean(conidia)),
-      by = list(vpd, Tm, branches)][order(vpd,Tm)]
+      by = list(vpd, Tm, germtubes)][order(vpd,Tm)]
 ```
 
 We will combine the data into one object to interegate.  
@@ -382,7 +382,7 @@ b_v[,percent := (conidia/sum(conidia))*100,
 b_v |>
    ggplot(aes( x = as.factor(vpd), 
                y = percent ,
-               fill = as.factor(branches))) + 
+               fill = as.factor(germ))) + 
    geom_col()+
    facet_grid(rows = vars(exp))+
    scale_fill_brewer(palette = "Blues", name = "Germ tubes")+
@@ -407,7 +407,7 @@ Figure_5 <-
    b_v |>
    ggplot(aes( x = as.factor(vpd), 
                y = percent ,
-               fill = as.factor(branches))) + 
+               fill = as.factor(germtubes))) + 
    geom_col()+
    scale_fill_brewer(palette = "Blues", name = "Germ tubes")+
    xlab("Vapour pressure deficit (kPa)")+
@@ -440,21 +440,21 @@ the next highest saturated treatments 0.132 - 0.186?
 ```{r VPDiff}
 # Temperature 22C
 b_v[vpd == 0.026 &
-       branches == 3, sum(percent)] -
+       germtubes == 3, sum(percent)] -
    b_v[vpd == 0.132 &
-       branches == 3, sum(percent)]
+       germtubes == 3, sum(percent)]
 
 # Temperature 25C
 b_v[vpd == 0.032 &
-       branches == 3, sum(percent)] -
+       germtubes == 3, sum(percent)] -
    b_v[vpd == 0.158 &
-       branches == 3, sum(percent)]
+       germtubes == 3, sum(percent)]
 
 # Temperature 28C
 b_v[vpd == 0.038 &
-       branches == 3, sum(percent)] -
+       germtubes == 3, sum(percent)] -
    b_v[vpd == 0.189 &
-       branches == 3, sum(percent)]
+       germtubes == 3, sum(percent)]
 
 ```
 
@@ -474,11 +474,11 @@ b_vpd_lng <-
 
 b_vpd_lng[, c("exp",
               "rep",
-              "branches",
+              "germtubes",
               "cham",
               "vpd") := list(as.integer(exp),
                              as.integer(rep),
-                             as.ordered(branches),
+                             as.ordered(germtubes),
                              paste0(Tm, RH),
                              as.numeric(vpd))]
 
@@ -487,7 +487,7 @@ b_vpd_lng[, c("exp",
 Test change
 
 ```{r}
-m1 <- polr(branches ~ vpd + Tm+exp, data = b_vpd_lng, Hess = TRUE)
+m1 <- polr(germtubes ~ vpd + Tm+exp, data = b_vpd_lng, Hess = TRUE)
 
 summary(m1)
 ```
@@ -522,12 +522,12 @@ m1_pred <-
       m1_pred,
       id.vars = c("Tm","vpd","exp"),
       measure.vars = c("0", "1", "2", "3"),
-      variable.name = "branches",
+      variable.name = "germtubes",
       value.name = "prob"
    )
 
 m1_pred |>
-   ggplot(aes(x = vpd, y = prob, colour = branches))+
+   ggplot(aes(x = vpd, y = prob, colour = germtubes))+
    facet_grid(rows = vars(Tm), cols = vars(exp))+
    geom_line(size = 1)+
    theme_minimal()
@@ -537,8 +537,8 @@ temperature and VPD were all significant. For ease in interpretation, lets look 
 a consolidated plot.  
 
 ```{r}
-m1_pred[,.(prob = mean(prob)),by= .(vpd,branches)] |>
-   ggplot(aes(x = vpd, y = prob, colour = branches))+
+m1_pred[,.(prob = mean(prob)),by= .(vpd,germtubes)] |>
+   ggplot(aes(x = vpd, y = prob, colour = germtubes))+
 #   facet_wrap(facets = vars(Tm))+
    geom_line(size = 1)+
    theme_minimal()
@@ -550,7 +550,7 @@ Model two we will investigate whether there is an interaction between temperatur
 and infection period.  
 
 ```{r model_2}
-m2 <- polr(branches ~ bs(vpd,knots = 0.5) + Tm + exp, data = b_vpd_lng, Hess = TRUE)
+m2 <- polr(germtubes ~ bs(vpd,knots = 0.5) + Tm + exp, data = b_vpd_lng, Hess = TRUE)
 summary(m2)
 ```
 Let's predict from this model to consider it's performance.
@@ -571,12 +571,12 @@ m2_pred <-
       m2_pred,
       id.vars = c("Tm","vpd","exp"),
       measure.vars = c("0", "1", "2", "3"),
-      variable.name = "branches",
+      variable.name = "germtubes",
       value.name = "prob"
    )
 
-m2_pred[,.(prob = mean(prob)),by= .(vpd,Tm,branches)] |>
-   ggplot(aes(x = vpd, y = prob, colour = branches))+
+m2_pred[,.(prob = mean(prob)),by= .(vpd,Tm,germtubes)] |>
+   ggplot(aes(x = vpd, y = prob, colour = germtubes))+
    facet_wrap(facets = vars(Tm))+
    geom_line(size = 1)+
    theme_minimal()
@@ -593,8 +593,8 @@ Lets look at just VPD and drop the temperature effect.
 
 ```{r}
 Figure_5b <- 
-   m2_pred[,.(prob = mean(prob)),by= .(vpd,branches)] |>
-   ggplot(aes(x = vpd, y = prob, colour = branches))+
+   m2_pred[,.(prob = mean(prob)),by= .(vpd,germtubes)] |>
+   ggplot(aes(x = vpd, y = prob, colour = germtubes))+
    #facet_wrap(facets = vars(Tm))+
    geom_line(size = 1)+
    theme_minimal() + 
