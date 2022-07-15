@@ -382,7 +382,7 @@ b_v[,percent := (conidia/sum(conidia))*100,
 b_v |>
    ggplot(aes( x = as.factor(vpd), 
                y = percent ,
-               fill = as.factor(germ))) + 
+               fill = as.factor(germtubes))) + 
    geom_col()+
    facet_grid(rows = vars(exp))+
    scale_fill_brewer(palette = "Blues", name = "Germ tubes")+
