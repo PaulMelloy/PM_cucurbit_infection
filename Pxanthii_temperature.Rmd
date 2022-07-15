@@ -12,7 +12,7 @@ date: "`r Sys.Date()`"
 output: 
    distill::distill_article:
       toc: true 
-      toc_depth: 2 
+      toc_depth: 3 
       toc_float: true 
 ---
 
@@ -37,8 +37,8 @@ library(mgcv) # gam statistical models
 library(rstanarm) # Bayesian statistical models
 library(ggplot2) # graphing
 library(MASS) # logistical ordinal regression functions, among other things
-library("flextable")
-source("R/p_star.R")
+library(flextable) # formatting data.frames as word tables
+source("R/p_star.R") # function to show visually the level of significance
 ```
 <br>  
 
@@ -80,10 +80,10 @@ g_tm_table <-
    fontsize(size = 8, part = "body") |>
    fontsize(size = 10, part = "header") |>
    bg(i = seq(2,32,2),bg = "grey80",part = "body")|>
-   set_caption("Table #: Podosheria xanthii germination percentage over a range of temperatures and incubation periods")
+   set_caption("Podosheria xanthii germination percentage over a range of temperatures and incubation periods")
 g_tm_table
 ```
-Insert table of treatments reps and standard errors of raw data here.  
+
 
 ```{r saveFig1, eval=FALSE, include=FALSE}
 # Save table as a word document
@@ -162,7 +162,7 @@ ggsave(
 ```
 
 These plot shows that the optimum temperature for rapid *P. xanthii* germination 
-is around 28C. 
+is around 28$^\circ$C. 
 Also, in the first plot, if we assume at time zero there was no germinated conidia, 
 50% of the conidia germinated within the first 12 hours. 
 In all temperature treatments, between 12 and 36 hours after infection conidial 
@@ -174,6 +174,8 @@ Lets further evaluate this fit.
 However instead of fitting a temperature as a separate random effect, as depicted 
 in the above plot, we will define temperature as a separate continuous predictor 
 that may or may not interact with infection period.  
+
+### Model analysis  
 
 Germination is a binomial response so we need to provide the number of germinated 
 to the number of non-germinated.
@@ -234,7 +236,7 @@ improving the additive model by fitting a better spline to the temperature predi
 
 P-splines use a penalised least-square method to fit the model and are better in
 non-normal distributions.
-Lets try p splines to see if we can improve the fit.
+Lets try p-splines to see if we can improve the fit.
 
 ```{r model_3}
 m3 <- gam(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k=3) + s(Tm, k =4, bs = "ps"),
@@ -281,7 +283,7 @@ vis.gam(m4,
 The cyclic P-splines seem to have improved the predictive ability of the model 
 with a very low UBRE, also improving the R squared value and explaining more deviance.
 We can also see that the curve has been shifted further towards 28C, however the
-the willingness of the model implies it might be overfit, especially between the 
+the willingness of the model implies it might be over-fit, especially between the 
 temperature ranges 20 - 24C.  
 
 <br>  
@@ -354,17 +356,16 @@ str(br_tm)
 summary(br_tm)
 ```
 
-This experiment used the incubation conditions as the germination experiment, and were
-which were incubated for 36 hours. 
-Following 36 hours of incubation at each respective temperatures, four leaf discs
-were removed from the growth chamber and sticky tape used to make a slide of the conidia
-from the surface of the leaf. 
-Two additional leaf discs were removed from the same chamber at the same time, stained 
-and fixed for microscopy using the leaf clearing method, described by Jose Liberato. 
-One hundred conidia were selected at random and the state of germination or germ tube
-production recorded.
+This experiment used the same incubation conditions as was used in the germination 
+experiment. 
+Following 36 hours of incubation at the respective temperatures, four leaf discs
+were removed from the growth chamber stained and fixed for microscopy using the 
+leaf clearing method. 
+Then one hundred conidia were selected at random to record the state of germination 
+or germ tube production.  
 
 <br>  
+
 ### Visualise the raw data  
 
 Summary table of the data.  
@@ -374,24 +375,31 @@ br_tm[, list(Mean = mean(conidia),
             Range = paste0(range(conidia), collapse = " - " ),
             Std_dev = round(sd(conidia),3),
             Replicates = .N),
-     by = .(Tm, branches)]
+     by = .(Tm, germtubes)] |>
+   flextable() |>
+   align(align = "center") |>
+   set_header_labels(Tm = "Temperature",
+                     Std_dev = "Standard deviation") |>
+   fontsize(size = 8, part = "body") |>
+   fontsize(size = 10, part = "header") |>
+   bg(i = seq(2,32,2),bg = "grey80",part = "body")|>
+   set_caption("Podosheria xanthii germination percentage over a range of temperatures and incubation periods")
 
 ```
 
 
 Let's plot the number of germ tubes for each temperature treatment. 
-We can use stacked bars to show not only the number of germ tubes, but visually represent
-the number of conidia with two or less germ tubes ect.  
+We can use stacked bars to show not only the number of germ tubes.  
 
 ```{r plot_raw_br}
 Figure_2b <-
    br_tm |>
-   ggplot(aes( x = as.factor(Tm), y = conidia/2 , fill = factor(branches,levels = c(1,2,3,0)))) + 
+   ggplot(aes( x = as.factor(Tm), y = conidia/2 , fill = factor(germtubes,levels = c(1,2,3,0)))) + 
    geom_col(position = position_stack(reverse = TRUE))+
-   scale_fill_manual(values = c("0" = "#eff3ff",
-                                "1" = "#bdd7e7",
-                                "2" = "#6baed6",
-                                "3" = "#2171b5"), 
+   scale_fill_manual(values = c("0" = "grey90",
+                                "1" = "grey70",
+                                "2" = "grey55",
+                                "3" = "grey40"), 
                      name = "Germ tubes")+
    xlab(expression("Temperature " ( degree*C)))+
    ylab("Germ tube production (%)")+
@@ -416,29 +424,33 @@ ggsave(
 ```
 
 This plot shows that the optimum temperature for rapid *P. xanthii* germination 
-is around 28$^\circ$C with `r br_tm[branches == 3 & Tm == 28, sum(conidia)]/2` % of 
+is around 28$^\circ$C with `r br_tm[germtubes == 3 & Tm == 28, sum(conidia)]/2` % of 
 conidia presenting three or more germ tubes. 
-25$^\circ$C and 22$^\circ$C presented `r br_tm[branches == 3 & Tm == 25, sum(conidia)]/2` and 
-`r br_tm[branches == 3 & Tm == 22, sum(conidia)]/2` % respectively.
+25$^\circ$C and 22$^\circ$C presented `r br_tm[germtubes == 3 & Tm == 25, sum(conidia)]/2` and 
+`r br_tm[germtubes == 3 & Tm == 22, sum(conidia)]/2` % respectively.
 Although there were only fewer conidia with tertiary germtubes in the 22°C treatment,
 combined means of conidia with two or more germtubes were 
-`r br_tm[branches >= 2 & Tm == 22, sum(conidia)]/2`,
-`r br_tm[branches >= 2 & Tm == 25, sum(conidia)]/2`, and 
-`r br_tm[branches >= 2 & Tm == 28, sum(conidia)]/2` in temperature treatments 
+`r br_tm[germtubes >= 2 & Tm == 22, sum(conidia)]/2`,
+`r br_tm[germtubes >= 2 & Tm == 25, sum(conidia)]/2`, and 
+`r br_tm[germtubes >= 2 & Tm == 28, sum(conidia)]/2` in temperature treatments 
 22$^\circ$C, 25$^\circ$C, and 28$^\circ$C.
-Only `r br_tm[branches == 3 & Tm == 19, sum(conidia)]/2`% of germinated conidia 
-had produced tertiary germ at the 19$^\circ$C, with 
-`r br_tm[branches >= 3 & Tm == 17, sum(conidia)]/2` tertiary germ tubes observed 
-at 17$^\circ$C and 31$^\circ$C. 
+Only `r br_tm[germtubes == 3 & Tm == 19, sum(conidia)]/2`% of germinated conidia 
+had produced tertiary germtubes in the 19$^\circ$C treatment, with 
+`r br_tm[germtubes >= 3 & Tm == 17, sum(conidia)]/2` tertiary germ tubes observed 
+in either 17$^\circ$C or 31$^\circ$C treatments. 
 
-Also, no germination occurs at temperatures 8$^\circ$C or less, and over 35$^\circ$C.
+Also, no germination was observed at temperatures 8$^\circ$C , or at 35$^\circ$C.
+
+<br>  
+
+### Ordinal logistic regression  
 
 Lets build a model to help us predict germ tube production after 36 
-hours when incubated at each respective temperature.
+hours when incubated at each respective temperature.  
 
-Trecate (2019) claims if there are more than 2 germ tubes successful infection is 
-likely to have occured.
-Here we have a response variable, `branches` which describes the progress of a potential
+Trecate (2019) claims if there are two or more germ tubes, successful infection is 
+likely to have occurred.
+Here we have a response variable, `germtubes` which describes the progress of a potential
 infection by a single conidia.  
    - `0` which represents a non-germinated conidia,  
    - `1` a germinated conidia with one germ tube,  
@@ -450,10 +462,9 @@ However, given our aim is to estimate successful infection by the pathogen by pr
 of germ tube production, estimating the number of germ tubes and hyphae 
 beyond three is irrelavant and provide inaccurate results, given the difference between
 the number of germtubes may not be equal or consistent between levels.
-`branches` would be better characterised as ordinal and therefore leads us to using
+`germtubes` would be better characterised as ordinal and therefore leads us to using
 *ordinal logistic regression* methods.  
 
-### Ordinal logistic regression  
 The aim of this analysis is to predict the likelihood of a conidia germinating and 
 branching under different temperature conditions.  
 The data is count data and our response is not binomial but ordered multinomial, 
@@ -471,8 +482,8 @@ br_tm_lng <-
    }))
 
 # classify each column
-br_tm_lng[, c("Tm", "branches", "rep") := list(Tm,
-                                               ordered(branches), 
+br_tm_lng[, c("Tm", "germtubes", "rep") := list(Tm,
+                                               ordered(germtubes), 
                                                as.factor(rep))]
 ```
 
@@ -482,7 +493,7 @@ Now we have prepared our data lets try it in our first model assuming a linear a
 additive relationship between germ tube number and temperature and leaf rep.  
 
 ```{r m1}
-m1 <- polr(branches ~ Tm + rep, 
+m1 <- polr(germtubes ~ Tm + rep, 
            data = br_tm_lng, 
            Hess = TRUE)
 
@@ -517,17 +528,17 @@ m1_pred <-
       m1_pred,
       id.vars = "Tm",
       measure.vars = c("0", "1", "2", "3"),
-      variable.name = "branches",
+      variable.name = "germtubes",
       value.name = "prob"
    )
 
 m1_pred |>
-   ggplot(aes(Tm, prob, colour = branches))+
+   ggplot(aes(Tm, prob, colour = germtubes))+
    geom_line(size = 1)+
    theme_minimal()
 ```
 
-The result is rather linear and predicts more branches at 40C when the raw data does not see any from 35C or presumably above.
+The result is rather linear and predicts more germtubes at 40C when the raw data does not see any from 35C or presumably above.
 
 #### Model 2 - Temperature effect on germ-tube production  
 
@@ -535,7 +546,7 @@ Lets try applying some splines to temperature and dropping rep.
 
 ```{r m2}
 library(splines)
-m2 <- polr(branches ~ bs(Tm,Boundary.knots = c(8,35)), 
+m2 <- polr(germtubes ~ bs(Tm,Boundary.knots = c(8,35)), 
                          data = br_tm_lng, Hess = TRUE)
 summary(m2)
 ```
@@ -565,12 +576,12 @@ m2_pred <-
       m2_pred,
       id.vars = "Tm",
       measure.vars = c("0", "1", "2", "3"),
-      variable.name = "branches",
+      variable.name = "germtubes",
       value.name = "prob"
    )
 
 m2_pred |>
-   ggplot(aes(Tm, prob, colour = branches))+
+   ggplot(aes(Tm, prob, colour = germtubes))+
    geom_line(size = 1)+
    theme_minimal()
 ```
@@ -586,7 +597,7 @@ Lets see if we can improve the model by changing the number and placement of the
 spline knots.  
 
 ```{r m3}
-m3 <- polr(branches ~ bs(Tm,
+m3 <- polr(germtubes ~ bs(Tm,
                          knots = c(19,23,27,30)), 
                          data = br_tm_lng, Hess = TRUE)
 summary(m3)
@@ -617,12 +628,12 @@ m3_pred <-
       m3_pred,
       id.vars = "Tm",
       measure.vars = c("0", "1", "2", "3"),
-      variable.name = "branches",
+      variable.name = "germtubes",
       value.name = "prob"
    )
 
 m3_pred |>
-   ggplot(aes(Tm, prob, colour = branches))+
+   ggplot(aes(Tm, prob, colour = germtubes))+
    geom_line(size = 1)+
    theme_minimal()
 ```
@@ -642,7 +653,7 @@ Based on the plot of model 3, we will try another model with fewer knots to redu
 the wiggliness.  
 
 ```{r m4}
-m4 <- polr(branches ~ bs(Tm,
+m4 <- polr(germtubes ~ bs(Tm,
                          knots = c(23,28)
                          ), 
                          data = br_tm_lng, Hess = TRUE)
@@ -676,13 +687,13 @@ m4_pred <-
       m4_pred,
       id.vars = "Tm",
       measure.vars = c("0", "1", "2", "3"),
-      variable.name = "branches",
+      variable.name = "germtubes",
       value.name = "prob"
    )
 
 Figure_3b <- 
    m4_pred |>
-   ggplot(aes(Tm, prob *100, colour = branches))+
+   ggplot(aes(Tm, prob *100, colour = germtubes))+
    geom_line(size = 1)+
    theme_minimal()+
    scale_colour_viridis_d(direction = -1)+

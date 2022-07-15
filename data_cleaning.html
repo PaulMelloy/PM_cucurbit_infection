@@ -2686,24 +2686,24 @@ branch and possibly develop infection structures.</p>
 <span class="va">br_tm</span> <span class="op">&lt;-</span> <span class="va">br_tm</span><span class="op">[</span><span class="op">-</span><span class="fl">2</span><span class="op">]</span>
 
 <span class="co">#write it to csv so it can be read back in cand formatted to a data.frame instead of vector.</span>
-<span class="fu"><a href="https://rdrr.io/r/base/write.html">write</a></span><span class="op">(</span><span class="va">br_tm</span>, <span class="st">&quot;cache/Tm_branches.csv&quot;</span><span class="op">)</span>
+<span class="fu"><a href="https://rdrr.io/r/base/write.html">write</a></span><span class="op">(</span><span class="va">br_tm</span>, <span class="st">&quot;cache/Tm_germtubes.csv&quot;</span><span class="op">)</span>
 
 <span class="co"># read in data using fread</span>
-<span class="va">br_tm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/fread.html">fread</a></span><span class="op">(</span><span class="st">&quot;cache/Tm_branches.csv&quot;</span>, 
-              col.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;obs&quot;</span>, <span class="st">&quot;Tm&quot;</span>, <span class="st">&quot;branches&quot;</span>,<span class="st">&quot;rep&quot;</span>, <span class="st">&quot;conidia&quot;</span><span class="op">)</span><span class="op">)</span>
+<span class="va">br_tm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/fread.html">fread</a></span><span class="op">(</span><span class="st">&quot;cache/Tm_germtubes.csv&quot;</span>, 
+              col.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;obs&quot;</span>, <span class="st">&quot;Tm&quot;</span>, <span class="st">&quot;germtubes&quot;</span>,<span class="st">&quot;rep&quot;</span>, <span class="st">&quot;conidia&quot;</span><span class="op">)</span><span class="op">)</span>
 
 <span class="co"># Add relative humidity and temperature data</span>
-<span class="va">br_tm</span><span class="op">[</span> , <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;Tm&quot;</span>,<span class="st">&quot;branches&quot;</span>, <span class="st">&quot;obs&quot;</span><span class="op">)</span> <span class="op">:=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">gsub</a></span><span class="op">(</span><span class="st">&quot;oC&quot;</span>,<span class="st">&quot;&quot;</span>,<span class="va">Tm</span><span class="op">)</span><span class="op">)</span>,
-                                         <span class="fu"><a href="https://rdrr.io/r/base/numeric.html">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">gsub</a></span><span class="op">(</span><span class="st">&quot;b&quot;</span>,<span class="st">&quot;&quot;</span>,<span class="va">branches</span><span class="op">)</span><span class="op">)</span>,
+<span class="va">br_tm</span><span class="op">[</span> , <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;Tm&quot;</span>,<span class="st">&quot;germtubes&quot;</span>, <span class="st">&quot;obs&quot;</span><span class="op">)</span> <span class="op">:=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">gsub</a></span><span class="op">(</span><span class="st">&quot;oC&quot;</span>,<span class="st">&quot;&quot;</span>,<span class="va">Tm</span><span class="op">)</span><span class="op">)</span>,
+                                         <span class="fu"><a href="https://rdrr.io/r/base/numeric.html">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">gsub</a></span><span class="op">(</span><span class="st">&quot;b&quot;</span>,<span class="st">&quot;&quot;</span>,<span class="va">germtubes</span><span class="op">)</span><span class="op">)</span>,
                                          <span class="cn">NULL</span><span class="op">)</span><span class="op">]</span>
 
-<span class="co"># recalculate vpd and convert branches to numeric</span>
+<span class="co"># recalculate vpd and convert germtubes to numeric</span>
 <span class="va">zero_branch</span> <span class="op">&lt;-</span> <span class="va">br_tm</span><span class="op">[</span>, <span class="op">(</span><span class="fl">100</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">conidia</span><span class="op">)</span><span class="op">)</span>, 
-                      by <span class="op">=</span> <span class="fu">.</span><span class="op">(</span><span class="va">Tm</span>, <span class="va">rep</span><span class="op">)</span><span class="op">]</span><span class="op">[</span>,<span class="va">branches</span> <span class="op">:=</span><span class="fl">0</span><span class="op">]</span><span class="op">[</span>, <span class="fu">.</span><span class="op">(</span><span class="va">Tm</span>, <span class="va">branches</span>, <span class="va">rep</span>, <span class="va">V1</span><span class="op">)</span><span class="op">]</span>
+                      by <span class="op">=</span> <span class="fu">.</span><span class="op">(</span><span class="va">Tm</span>, <span class="va">rep</span><span class="op">)</span><span class="op">]</span><span class="op">[</span>,<span class="va">germtubes</span> <span class="op">:=</span><span class="fl">0</span><span class="op">]</span><span class="op">[</span>, <span class="fu">.</span><span class="op">(</span><span class="va">Tm</span>, <span class="va">germtubes</span>, <span class="va">rep</span>, <span class="va">V1</span><span class="op">)</span><span class="op">]</span>
 
 <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/setattr.html">setnames</a></span><span class="op">(</span><span class="va">zero_branch</span>,old <span class="op">=</span> <span class="st">&quot;V1&quot;</span>, new <span class="op">=</span> <span class="st">&quot;conidia&quot;</span><span class="op">)</span>
 
-<span class="co"># Bind in the data containing non-germinated conidia as conidia with zero branches</span>
+<span class="co"># Bind in the data containing non-germinated conidia as conidia with zero germtubes</span>
 <span class="va">br_tm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/rbindlist.html">rbind</a></span><span class="op">(</span><span class="va">br_tm</span>,<span class="va">zero_branch</span><span class="op">)</span><span class="op">[</span>, <span class="va">conidia</span> <span class="op">:=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="va">conidia</span><span class="op">)</span><span class="op">]</span>
 </code></pre>
 </div>
@@ -2718,7 +2718,7 @@ analysis.</p>
       <span class="va">br_tm</span>,
       <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>Tm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="fl">8</span>, <span class="fl">4</span> <span class="op">*</span> <span class="fl">2</span><span class="op">)</span>,
                   <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="fl">35</span>, <span class="fl">4</span> <span class="op">*</span> <span class="fl">2</span><span class="op">)</span><span class="op">)</span>,
-           branches <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">1</span>,<span class="fl">2</span>,<span class="fl">3</span><span class="op">)</span>, 
+           germtubes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">1</span>,<span class="fl">2</span>,<span class="fl">3</span><span class="op">)</span>, 
                          each <span class="op">=</span> <span class="fl">2</span>,
                          times <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>,
            rep <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span>, <span class="fl">8</span><span class="op">)</span>,
@@ -2739,17 +2739,17 @@ data.</p>
 <span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">br_tm</span><span class="op">)</span>
 </code></pre>
 </div>
-<pre><code>   Tm branches rep conidia
-1: 17        1   1      15
-2: 17        1   2      12
-3: 17        2   1      15
-4: 17        2   2      18
-5: 17        3   1       0
-6: 17        3   2       0</code></pre>
+<pre><code>   Tm germtubes rep conidia
+1: 17         1   1      15
+2: 17         1   2      12
+3: 17         2   1      15
+4: 17         2   2      18
+5: 17         3   1       0
+6: 17         3   2       0</code></pre>
 </div>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
-<pre class="sourceCode r"><code class="sourceCode r"><span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/fwrite.html">fwrite</a></span><span class="op">(</span><span class="va">br_tm</span><span class="op">[</span><span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/setorder.html">order</a></span><span class="op">(</span><span class="va">Tm</span>,<span class="va">branches</span>, <span class="va">rep</span><span class="op">)</span>,<span class="op">]</span>, <span class="st">&quot;cache/branching_temperature.csv&quot;</span><span class="op">)</span>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/fwrite.html">fwrite</a></span><span class="op">(</span><span class="va">br_tm</span><span class="op">[</span><span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/setorder.html">order</a></span><span class="op">(</span><span class="va">Tm</span>,<span class="va">germtubes</span>, <span class="va">rep</span><span class="op">)</span>,<span class="op">]</span>, <span class="st">&quot;cache/branching_temperature.csv&quot;</span><span class="op">)</span>
 </code></pre>
 </div>
 </div>
@@ -2858,8 +2858,8 @@ deficit effect on branching</h3>
      value.name <span class="op">=</span> <span class="st">&quot;conidia&quot;</span>,
      variable.factor <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>
 
-<span class="co"># split variable column into two columns vpd and branches and remove variable column</span>
-<span class="va">br_vpd</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;RH&quot;</span>,<span class="st">&quot;branches&quot;</span><span class="op">)</span> <span class="op">:=</span> 
+<span class="co"># split variable column into two columns vpd and germtubes and remove variable column</span>
+<span class="va">br_vpd</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;RH&quot;</span>,<span class="st">&quot;germtubes&quot;</span><span class="op">)</span> <span class="op">:=</span> 
           <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/tstrsplit.html">tstrsplit</a></span><span class="op">(</span><span class="va">variable</span>, <span class="st">&quot;_b&quot;</span><span class="op">)</span><span class="op">]</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;vpd&quot;</span>,<span class="st">&quot;variable&quot;</span><span class="op">)</span> <span class="op">:=</span>
                                         <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="fu">epiphytoolR</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/epiphytoolR/man/calc_vpd.html">calc_vpd</a></span><span class="op">(</span>RH <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html">as.numeric</a></span><span class="op">(</span><span class="va">RH</span><span class="op">)</span>,
                                                                          Tm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html">as.numeric</a></span><span class="op">(</span><span class="va">Tm</span><span class="op">)</span><span class="op">)</span>,
@@ -2868,22 +2868,22 @@ deficit effect on branching</h3>
 
 <span class="co"># Change column order</span>
 <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/setcolorder.html">setcolorder</a></span><span class="op">(</span><span class="va">br_vpd</span>,
-            neworder <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;vpd&quot;</span>,<span class="st">&quot;RH&quot;</span>, <span class="st">&quot;Tm&quot;</span>, <span class="st">&quot;branches&quot;</span>,<span class="st">&quot;conidia&quot;</span><span class="op">)</span><span class="op">)</span>
+            neworder <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;vpd&quot;</span>,<span class="st">&quot;RH&quot;</span>, <span class="st">&quot;Tm&quot;</span>, <span class="st">&quot;germtubes&quot;</span>,<span class="st">&quot;conidia&quot;</span><span class="op">)</span><span class="op">)</span>
 
 <span class="co"># set correct classes and add non-germinated</span>
 <span class="va">br_vpd</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;RH&quot;</span>,
-           <span class="st">&quot;branches&quot;</span>,
+           <span class="st">&quot;germtubes&quot;</span>,
            <span class="st">&quot;conidia&quot;</span>,
            <span class="st">&quot;rep&quot;</span><span class="op">)</span> <span class="op">:=</span>
               <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html">as.numeric</a></span><span class="op">(</span><span class="va">RH</span><span class="op">)</span>,
-                   <span class="fu"><a href="https://rdrr.io/r/base/numeric.html">as.numeric</a></span><span class="op">(</span><span class="va">branches</span><span class="op">)</span>,
+                   <span class="fu"><a href="https://rdrr.io/r/base/numeric.html">as.numeric</a></span><span class="op">(</span><span class="va">germtubes</span><span class="op">)</span>,
                    <span class="fu"><a href="https://rdrr.io/r/base/numeric.html">as.numeric</a></span><span class="op">(</span><span class="va">conidia</span><span class="op">)</span>,
                    <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">4</span>,<span class="va">.N</span><span class="op">/</span><span class="fl">4</span><span class="op">)</span><span class="op">)</span><span class="op">]</span>
 
 <span class="co"># Create data.table representing non-germinated conidia</span>
 <span class="co">## Assuming only 100 conidia were examined</span>
 <span class="va">zero_branch</span> <span class="op">&lt;-</span> <span class="va">br_vpd</span><span class="op">[</span>, <span class="op">(</span><span class="fl">100</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">conidia</span><span class="op">)</span><span class="op">)</span>, 
-                      by <span class="op">=</span> <span class="fu">.</span><span class="op">(</span><span class="va">vpd</span>,<span class="va">RH</span>,<span class="va">Tm</span>, <span class="va">rep</span><span class="op">)</span><span class="op">]</span><span class="op">[</span>,<span class="va">branches</span> <span class="op">:=</span><span class="fl">0</span><span class="op">]</span><span class="op">[</span>, <span class="fu">.</span><span class="op">(</span><span class="va">vpd</span>,<span class="va">RH</span>, <span class="va">Tm</span>, <span class="va">branches</span>, <span class="va">rep</span>, <span class="va">V1</span><span class="op">)</span><span class="op">]</span>
+                      by <span class="op">=</span> <span class="fu">.</span><span class="op">(</span><span class="va">vpd</span>,<span class="va">RH</span>,<span class="va">Tm</span>, <span class="va">rep</span><span class="op">)</span><span class="op">]</span><span class="op">[</span>,<span class="va">germtubes</span> <span class="op">:=</span><span class="fl">0</span><span class="op">]</span><span class="op">[</span>, <span class="fu">.</span><span class="op">(</span><span class="va">vpd</span>,<span class="va">RH</span>, <span class="va">Tm</span>, <span class="va">germtubes</span>, <span class="va">rep</span>, <span class="va">V1</span><span class="op">)</span><span class="op">]</span>
 
 <span class="co"># some treatment reps contained greater than 100 conidia assessments, therefore </span>
 <span class="co">#  any negative number will be converted to zero and no non-germinated conidia are</span>
@@ -2893,8 +2893,8 @@ deficit effect on branching</h3>
 <span class="co"># rename column</span>
 <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/setattr.html">setnames</a></span><span class="op">(</span><span class="va">zero_branch</span>,old <span class="op">=</span> <span class="st">&quot;V1&quot;</span>, new <span class="op">=</span> <span class="st">&quot;conidia&quot;</span><span class="op">)</span>
 
-<span class="co"># Bind and roder data containing non-germinated conidia as conidia with zero branches</span>
-<span class="va">br_vpd</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/rbindlist.html">rbind</a></span><span class="op">(</span><span class="va">br_vpd</span>,<span class="va">zero_branch</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/setorder.html">order</a></span><span class="op">(</span><span class="va">Tm</span>,<span class="va">branches</span>, <span class="va">rep</span><span class="op">)</span><span class="op">]</span>
+<span class="co"># Bind and roder data containing non-germinated conidia as conidia with zero germtubes</span>
+<span class="va">br_vpd</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/rbindlist.html">rbind</a></span><span class="op">(</span><span class="va">br_vpd</span>,<span class="va">zero_branch</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/setorder.html">order</a></span><span class="op">(</span><span class="va">Tm</span>,<span class="va">germtubes</span>, <span class="va">rep</span><span class="op">)</span><span class="op">]</span>
 </code></pre>
 </div>
 </div>
@@ -2906,13 +2906,13 @@ headers and the first 5 rows of data.</p>
 <span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">br_vpd</span><span class="op">)</span>
 </code></pre>
 </div>
-<pre><code>           vpd RH Tm branches conidia rep
-1: 0.026 [kPa] 99 22        0       2   1
-2: 0.132 [kPa] 95 22        0      73   1
-3: 0.397 [kPa] 85 22        0      69   1
-4: 0.661 [kPa] 75 22        0      84   1
-5: 1.190 [kPa] 55 22        0      81   1
-6: 1.798 [kPa] 32 22        0      90   1</code></pre>
+<pre><code>           vpd RH Tm germtubes conidia rep
+1: 0.026 [kPa] 99 22         0       2   1
+2: 0.132 [kPa] 95 22         0      73   1
+3: 0.397 [kPa] 85 22         0      69   1
+4: 0.661 [kPa] 75 22         0      84   1
+5: 1.190 [kPa] 55 22         0      81   1
+6: 1.798 [kPa] 32 22         0      90   1</code></pre>
 </div>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
@@ -2929,25 +2929,25 @@ headers and the first 5 rows of data.</p>
   <span class="fu"><a href="https://readxl.tidyverse.org/reference/read_excel.html">read_xls</a></span><span class="op">(</span><span class="st">&quot;data/Chapter 5 (germination vs VPD vs temp vs RH).xls&quot;</span>,
            sheet <span class="op">=</span> <span class="st">&quot;Sheet2&quot;</span>,
            range <span class="op">=</span> <span class="st">&quot;AF3:AI182&quot;</span>,
-           col_names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;vpd&quot;</span>, <span class="st">&quot;branches&quot;</span>, <span class="st">&quot;rep&quot;</span>, <span class="st">&quot;conidia&quot;</span><span class="op">)</span><span class="op">)</span>
+           col_names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;vpd&quot;</span>, <span class="st">&quot;germtubes&quot;</span>, <span class="st">&quot;rep&quot;</span>, <span class="st">&quot;conidia&quot;</span><span class="op">)</span><span class="op">)</span>
 
 <span class="co"># make data.table format and add temperature and humidity</span>
 <span class="va">br_vpd2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/data.table.html">data.table</a></span><span class="op">(</span><span class="va">br_vpd2</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;Tm&quot;</span>,<span class="st">&quot;RH&quot;</span><span class="op">)</span> <span class="op">:=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">22</span>,<span class="fl">25</span>,<span class="fl">28</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">12</span>, times <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>,
                                                             <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">95</span>,<span class="fl">85</span>,<span class="fl">75</span>,<span class="fl">55</span>,<span class="fl">32</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">12</span><span class="op">*</span><span class="fl">3</span><span class="op">)</span><span class="op">)</span><span class="op">]</span>
-<span class="co"># remove &quot;b&quot; from branches and make it numeric</span>
-<span class="va">br_vpd2</span><span class="op">[</span>, <span class="va">branches</span> <span class="op">:=</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">gsub</a></span><span class="op">(</span><span class="st">&quot;b&quot;</span>,<span class="st">&quot;&quot;</span>,<span class="va">branches</span><span class="op">)</span><span class="op">)</span><span class="op">]</span>
+<span class="co"># remove &quot;b&quot; from germtubes and make it numeric</span>
+<span class="va">br_vpd2</span><span class="op">[</span>, <span class="va">germtubes</span> <span class="op">:=</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">gsub</a></span><span class="op">(</span><span class="st">&quot;b&quot;</span>,<span class="st">&quot;&quot;</span>,<span class="va">germtubes</span><span class="op">)</span><span class="op">)</span><span class="op">]</span>
 
 <span class="co"># use saturated branching data from temperature experiment</span>
 <span class="va">br_vpd99</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/copy.html">copy</a></span><span class="op">(</span><span class="va">br_tm</span><span class="op">)</span>
 <span class="va">br_vpd99</span><span class="op">[</span>, <span class="va">RH</span> <span class="op">:=</span> <span class="fl">99</span><span class="op">]</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;vpd&quot;</span>,
-                         <span class="st">&quot;branches&quot;</span>,
+                         <span class="st">&quot;germtubes&quot;</span>,
                          <span class="st">&quot;rep&quot;</span>,
                          <span class="st">&quot;conidia&quot;</span>,
                          <span class="st">&quot;Tm&quot;</span>,
                          <span class="st">&quot;RH&quot;</span><span class="op">)</span> <span class="op">:=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="fu">epiphytoolR</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/epiphytoolR/man/calc_vpd.html">calc_vpd</a></span><span class="op">(</span>RH <span class="op">=</span> <span class="va">RH</span>,
                                                                  Tm <span class="op">=</span> <span class="va">Tm</span><span class="op">)</span>,
                                            <span class="fl">3</span><span class="op">)</span><span class="op">)</span>,
-                                        <span class="va">branches</span>,
+                                        <span class="va">germtubes</span>,
                                         <span class="va">rep</span>,
                                         <span class="va">conidia</span>,
                                         <span class="va">Tm</span>,
@@ -2955,7 +2955,7 @@ headers and the first 5 rows of data.</p>
 
 <span class="va">br_vpd2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/rbindlist.html">rbind</a></span><span class="op">(</span><span class="va">br_vpd99</span><span class="op">[</span>
    <span class="va">Tm</span> <span class="op"><a href="https://rdrr.io/r/base/match.html">%in%</a></span> <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/duplicated.html">unique</a></span><span class="op">(</span><span class="va">br_vpd2</span><span class="op">$</span><span class="va">Tm</span><span class="op">)</span> <span class="op">&amp;</span>
-      <span class="va">branches</span> <span class="op">!=</span> <span class="fl">0</span>,<span class="op">]</span>,
+      <span class="va">germtubes</span> <span class="op">!=</span> <span class="fl">0</span>,<span class="op">]</span>,
                  <span class="va">br_vpd2</span><span class="op">)</span>
 
 <span class="co"># recalculate vpd</span>
@@ -2968,7 +2968,7 @@ headers and the first 5 rows of data.</p>
 <span class="co"># Create data.table representing non-germinated conidia</span>
 <span class="co">## Assuming only 100 conidia were examined</span>
 <span class="va">zero_branch</span> <span class="op">&lt;-</span> <span class="va">br_vpd2</span><span class="op">[</span>, <span class="op">(</span><span class="fl">100</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">conidia</span><span class="op">)</span><span class="op">)</span>, 
-                      by <span class="op">=</span> <span class="fu">.</span><span class="op">(</span><span class="va">Tm</span>, <span class="va">RH</span>,<span class="va">vpd</span>, <span class="va">rep</span><span class="op">)</span><span class="op">]</span><span class="op">[</span>,<span class="va">branches</span> <span class="op">:=</span><span class="fl">0</span><span class="op">]</span><span class="op">[</span>, <span class="fu">.</span><span class="op">(</span><span class="va">vpd</span>,<span class="va">RH</span>,<span class="va">Tm</span>, <span class="va">branches</span>, <span class="va">rep</span>, <span class="va">V1</span><span class="op">)</span><span class="op">]</span>
+                      by <span class="op">=</span> <span class="fu">.</span><span class="op">(</span><span class="va">Tm</span>, <span class="va">RH</span>,<span class="va">vpd</span>, <span class="va">rep</span><span class="op">)</span><span class="op">]</span><span class="op">[</span>,<span class="va">germtubes</span> <span class="op">:=</span><span class="fl">0</span><span class="op">]</span><span class="op">[</span>, <span class="fu">.</span><span class="op">(</span><span class="va">vpd</span>,<span class="va">RH</span>,<span class="va">Tm</span>, <span class="va">germtubes</span>, <span class="va">rep</span>, <span class="va">V1</span><span class="op">)</span><span class="op">]</span>
 
 <span class="co"># some treatment reps contained greater than 100 conidia assessments, therefore </span>
 <span class="co">#  any negative number will be converted to zero and no non-germinated conidia are</span>
@@ -2980,10 +2980,10 @@ headers and the first 5 rows of data.</p>
 
 <span class="co"># Change column order</span>
 <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/setcolorder.html">setcolorder</a></span><span class="op">(</span><span class="va">br_vpd2</span>,
-            neworder <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;vpd&quot;</span>, <span class="st">&quot;RH&quot;</span>,<span class="st">&quot;Tm&quot;</span>, <span class="st">&quot;branches&quot;</span>,<span class="st">&quot;rep&quot;</span>,<span class="st">&quot;conidia&quot;</span><span class="op">)</span><span class="op">)</span>
+            neworder <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;vpd&quot;</span>, <span class="st">&quot;RH&quot;</span>,<span class="st">&quot;Tm&quot;</span>, <span class="st">&quot;germtubes&quot;</span>,<span class="st">&quot;rep&quot;</span>,<span class="st">&quot;conidia&quot;</span><span class="op">)</span><span class="op">)</span>
 
-<span class="co"># Bind and roder data containing non-germinated conidia as conidia with zero branches</span>
-<span class="va">br_vpd2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/rbindlist.html">rbind</a></span><span class="op">(</span><span class="va">br_vpd2</span>,<span class="va">zero_branch</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/setorder.html">order</a></span><span class="op">(</span><span class="va">Tm</span>,<span class="va">branches</span>, <span class="va">rep</span><span class="op">)</span><span class="op">]</span>
+<span class="co"># Bind and roder data containing non-germinated conidia as conidia with zero germtubes</span>
+<span class="va">br_vpd2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/rbindlist.html">rbind</a></span><span class="op">(</span><span class="va">br_vpd2</span>,<span class="va">zero_branch</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/setorder.html">order</a></span><span class="op">(</span><span class="va">Tm</span>,<span class="va">germtubes</span>, <span class="va">rep</span><span class="op">)</span><span class="op">]</span>
 </code></pre>
 </div>
 </div>
@@ -2995,13 +2995,13 @@ headers and the first 5 rows of data.</p>
 <span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">br_vpd2</span><span class="op">)</span>
 </code></pre>
 </div>
-<pre><code>           vpd RH Tm branches rep conidia
-1: 0.026 [kPa] 99 22        0   1      34
-2: 0.132 [kPa] 95 22        0   1      86
-3: 0.397 [kPa] 85 22        0   1      86
-4: 0.661 [kPa] 75 22        0   1      92
-5: 1.190 [kPa] 55 22        0   1      91
-6: 1.798 [kPa] 32 22        0   1      93</code></pre>
+<pre><code>           vpd RH Tm germtubes rep conidia
+1: 0.026 [kPa] 99 22         0   1      34
+2: 0.132 [kPa] 95 22         0   1      86
+3: 0.397 [kPa] 85 22         0   1      86
+4: 0.661 [kPa] 75 22         0   1      92
+5: 1.190 [kPa] 55 22         0   1      91
+6: 1.798 [kPa] 32 22         0   1      93</code></pre>
 </div>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
@@ -3020,16 +3020,16 @@ on germtube branching under different vpd</h3>
 <span class="co"># cut out non-data lines</span>
 <span class="va">dat</span> <span class="op">&lt;-</span> <span class="va">dat</span><span class="op">[</span><span class="op">-</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">2</span>,<span class="fl">55</span><span class="op">:</span><span class="fl">58</span>,<span class="fl">111</span><span class="op">:</span><span class="fl">114</span>,<span class="fl">167</span><span class="op">:</span><span class="fl">170</span>,<span class="fl">223</span><span class="op">:</span><span class="fl">226</span><span class="op">)</span><span class="op">]</span>
 <span class="co">#write it to csv</span>
-<span class="fu"><a href="https://rdrr.io/r/base/write.html">write</a></span><span class="op">(</span><span class="va">dat</span>, <span class="st">&quot;cache/vpd_branches.csv&quot;</span><span class="op">)</span>
+<span class="fu"><a href="https://rdrr.io/r/base/write.html">write</a></span><span class="op">(</span><span class="va">dat</span>, <span class="st">&quot;cache/vpd_germtubes.csv&quot;</span><span class="op">)</span>
 
 <span class="co"># read in data using fread</span>
-<span class="va">br_vpd3</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/fread.html">fread</a></span><span class="op">(</span><span class="st">&quot;cache/vpd_branches.csv&quot;</span><span class="op">)</span>
+<span class="va">br_vpd3</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/fread.html">fread</a></span><span class="op">(</span><span class="st">&quot;cache/vpd_germtubes.csv&quot;</span><span class="op">)</span>
 
 <span class="co"># Add relative humidity and temperature data</span>
 <span class="va">br_vpd3</span><span class="op">[</span> , <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;RH&quot;</span>,<span class="st">&quot;Tm&quot;</span><span class="op">)</span> <span class="op">:=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">99</span>,<span class="fl">95</span>,<span class="fl">85</span>,<span class="fl">75</span>,<span class="fl">55</span>,<span class="fl">32</span><span class="op">)</span>,each <span class="op">=</span> <span class="fl">36</span><span class="op">)</span>,
                                     <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">22</span>,<span class="fl">25</span>,<span class="fl">28</span><span class="op">)</span>,each <span class="op">=</span> <span class="fl">12</span>, times <span class="op">=</span> <span class="fl">6</span><span class="op">)</span><span class="op">)</span><span class="op">]</span>
 
-<span class="co"># recalculate vpd and convert branches to numeric</span>
+<span class="co"># recalculate vpd and convert germtubes to numeric</span>
 <span class="va">br_vpd3</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;vpd&quot;</span>,
                 <span class="st">&quot;bran&quot;</span><span class="op">)</span> <span class="op">:=</span>
               <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="fu">epiphytoolR</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/epiphytoolR/man/calc_vpd.html">calc_vpd</a></span><span class="op">(</span>RH <span class="op">=</span> <span class="va">RH</span>,
@@ -3044,13 +3044,13 @@ on germtube branching under different vpd</h3>
 
 <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/setattr.html">setnames</a></span><span class="op">(</span><span class="va">br_vpd3</span>,
          old <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;bran&quot;</span>, <span class="st">&quot;numb&quot;</span><span class="op">)</span>,
-         new <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;branches&quot;</span>,<span class="st">&quot;conidia&quot;</span><span class="op">)</span><span class="op">)</span>
+         new <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;germtubes&quot;</span>,<span class="st">&quot;conidia&quot;</span><span class="op">)</span><span class="op">)</span>
 
 
 <span class="co"># Create data.table representing non-germinated conidia</span>
 <span class="co">## Assuming only 100 conidia were examined</span>
 <span class="va">zero_branch</span> <span class="op">&lt;-</span> <span class="va">br_vpd3</span><span class="op">[</span>, <span class="op">(</span><span class="fl">100</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">conidia</span><span class="op">)</span><span class="op">)</span>, 
-                      by <span class="op">=</span> <span class="fu">.</span><span class="op">(</span><span class="va">Tm</span>, <span class="va">RH</span>,<span class="va">vpd</span>, <span class="va">rep</span><span class="op">)</span><span class="op">]</span><span class="op">[</span>,<span class="va">branches</span> <span class="op">:=</span><span class="fl">0</span><span class="op">]</span><span class="op">[</span>, <span class="fu">.</span><span class="op">(</span><span class="va">vpd</span>, <span class="va">RH</span>, <span class="va">Tm</span>, <span class="va">branches</span>, <span class="va">rep</span>, <span class="va">V1</span><span class="op">)</span><span class="op">]</span>
+                      by <span class="op">=</span> <span class="fu">.</span><span class="op">(</span><span class="va">Tm</span>, <span class="va">RH</span>,<span class="va">vpd</span>, <span class="va">rep</span><span class="op">)</span><span class="op">]</span><span class="op">[</span>,<span class="va">germtubes</span> <span class="op">:=</span><span class="fl">0</span><span class="op">]</span><span class="op">[</span>, <span class="fu">.</span><span class="op">(</span><span class="va">vpd</span>, <span class="va">RH</span>, <span class="va">Tm</span>, <span class="va">germtubes</span>, <span class="va">rep</span>, <span class="va">V1</span><span class="op">)</span><span class="op">]</span>
 
 <span class="co"># some treatment reps contained greater than 100 conidia assessments, therefore </span>
 <span class="co">#  any negative number will be converted to zero and no non-germinated conidia are</span>
@@ -3062,10 +3062,10 @@ on germtube branching under different vpd</h3>
 
 <span class="co"># Change column order</span>
 <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/setcolorder.html">setcolorder</a></span><span class="op">(</span><span class="va">br_vpd3</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;Obs&quot;</span><span class="op">)</span> <span class="op">:=</span> <span class="cn">NULL</span><span class="op">]</span>,
-            neworder <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;vpd&quot;</span>, <span class="st">&quot;RH&quot;</span>, <span class="st">&quot;Tm&quot;</span>, <span class="st">&quot;branches&quot;</span>,<span class="st">&quot;rep&quot;</span>,<span class="st">&quot;conidia&quot;</span><span class="op">)</span><span class="op">)</span>
+            neworder <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;vpd&quot;</span>, <span class="st">&quot;RH&quot;</span>, <span class="st">&quot;Tm&quot;</span>, <span class="st">&quot;germtubes&quot;</span>,<span class="st">&quot;rep&quot;</span>,<span class="st">&quot;conidia&quot;</span><span class="op">)</span><span class="op">)</span>
 
-<span class="co"># Bind and roder data containing non-germinated conidia as conidia with zero branches</span>
-<span class="va">br_vpd3</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/rbindlist.html">rbind</a></span><span class="op">(</span><span class="va">br_vpd3</span>, <span class="va">zero_branch</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/setorder.html">order</a></span><span class="op">(</span><span class="va">Tm</span>,<span class="va">branches</span>, <span class="va">rep</span><span class="op">)</span><span class="op">]</span>
+<span class="co"># Bind and roder data containing non-germinated conidia as conidia with zero germtubes</span>
+<span class="va">br_vpd3</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/rbindlist.html">rbind</a></span><span class="op">(</span><span class="va">br_vpd3</span>, <span class="va">zero_branch</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/setorder.html">order</a></span><span class="op">(</span><span class="va">Tm</span>,<span class="va">germtubes</span>, <span class="va">rep</span><span class="op">)</span><span class="op">]</span>
 </code></pre>
 </div>
 </div>
@@ -3077,13 +3077,13 @@ headers and the first 5 rows of data.</p>
 <span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">br_vpd3</span><span class="op">)</span>
 </code></pre>
 </div>
-<pre><code>           vpd RH Tm branches rep conidia
-1: 0.026 [kPa] 99 22        0   1      19
-2: 0.132 [kPa] 95 22        0   1      86
-3: 0.397 [kPa] 85 22        0   1      91
-4: 0.661 [kPa] 75 22        0   1      92
-5: 1.190 [kPa] 55 22        0   1      93
-6: 1.798 [kPa] 32 22        0   1      92</code></pre>
+<pre><code>           vpd RH Tm germtubes rep conidia
+1: 0.026 [kPa] 99 22         0   1      19
+2: 0.132 [kPa] 95 22         0   1      86
+3: 0.397 [kPa] 85 22         0   1      91
+4: 0.661 [kPa] 75 22         0   1      92
+5: 1.190 [kPa] 55 22         0   1      93
+6: 1.798 [kPa] 32 22         0   1      92</code></pre>
 </div>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
