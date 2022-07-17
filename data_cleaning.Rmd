@@ -6,9 +6,18 @@ author:
   - name: Paul Melloy 
     url: https://paulmelloy.github.io/
     affiliation: The University of Queensland
+    affiliation_url: https://uq.edu.au
 date: "`r Sys.Date()`"
-output: distill::distill_article
+output: 
+   distill::distill_article:
+      toc: true 
+      toc_depth: 3 
+      toc_float: true 
 ---
+<style>
+body {
+text-align: justify}
+</style>
 
 # The influence of temperature and vapour pressure deficit on conidia germination and germ tube production in an Australian *Podosphaera xanthii* isolate.
 
