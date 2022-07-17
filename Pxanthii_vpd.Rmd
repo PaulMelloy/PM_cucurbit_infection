@@ -39,6 +39,7 @@ library(ggplot2) # graphing
 library(MASS) # logistical ordinal regression functions, among other things
 library(splines) # non-linear predictors
 library(flextable)
+library(marginaleffects) # produce predicted probabilities for polr
 source("R/p_star.R")
 ```
 <br>  

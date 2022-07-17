@@ -38,6 +38,7 @@ library(rstanarm) # Bayesian statistical models
 library(ggplot2) # graphing
 library(MASS) # logistical ordinal regression functions, among other things
 library(flextable) # formatting data.frames as word tables
+library(marginaleffects) # produce predicted probabilities for polr()
 source("R/p_star.R") # function to show visually the level of significance
 ```
 <br>  
@@ -664,15 +665,23 @@ better fit.
 Also the t value is higher hinting this model shows clearer differences between 
 the variables.  
 
-Now lets try predicting from this model.  
+Now lets try predicting from this model, we will use the .  
 
 ```{r pred_m4}
-m4_pred <-
-   as.data.table(round(predict(m4,
-                               test_dat[, 1],
-                               type = "p",
-                               se.fit = TRUE),
-                       3))[, Tm := test_dat$Tm]
+m4_pred <- marginaleffects::predictions(m4,
+                                        newdata = test_dat[,1],
+                                        type = "probs")
+# set data.table format
+setDT(m4_pred)
+
+# calculate approximate confidence intervals
+m4_pred[, c("CI_low","CI_high") := .(predicted - 1.96*std.error,
+                                   predicted + 1.96*std.error)]
+
+# change the column names
+setnames(m4_pred,
+         old = c("group","Tm.x"),
+         new = c("germtubes", "Tm"))
 
 ```
 We get a warning indicating the the predicted values are outside the range of the 
@@ -682,19 +691,14 @@ this temperature range of 8$^\circ$C and 35$^\circ$C
 
 ```{r plot_m4}
 # format to long 
-m4_pred <-
-   melt(
-      m4_pred,
-      id.vars = "Tm",
-      measure.vars = c("0", "1", "2", "3"),
-      variable.name = "germtubes",
-      value.name = "prob"
-   )
-
 Figure_3b <- 
    m4_pred |>
-   ggplot(aes(Tm, prob *100, colour = germtubes))+
+   ggplot(aes(Tm, predicted *100, colour = germtubes))+
    geom_line(size = 1)+
+   geom_line(data = m4_pred, aes(x = Tm, y = CI_low*100, #colour = group,
+                                 ), linetype = "dotted", size = 0.7)+
+   geom_line(data = m4_pred, aes(x = Tm, y = CI_high*100, #colour = germtubes,
+                                 ), linetype = "dotted", size = 0.7)+
    theme_minimal()+
    scale_colour_viridis_d(direction = -1)+
    xlab(expression("Temperature " ( degree*C)))+
@@ -710,7 +714,7 @@ Figure_3b <-
             y = 96,
             label = "(b)",size = 5)
 Figure_3b
-```
+[```
 
 ```{r saveFig3b, eval=FALSE, include=FALSE}
 # Save table as a word document
