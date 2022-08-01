@@ -134,7 +134,7 @@ Figure_2a <-
    ggplot(aes(x = Tm, y = germ_conidia, colour = as.factor(i_period))) + 
    geom_point()+
    geom_smooth(method = "gam",formula = y ~ s(x, k = 8), alpha = 0.2)+
-   scale_color_viridis_d()+
+   scale_color_viridis_d(direction = -1)+
    xlab(expression("Temperature " ( degree*C)))+
    ylab("Germinated conidia (%)")+
    labs(colour = "Time (h)")+
@@ -162,7 +162,7 @@ ggsave(
 )
 ```
 
-These plot shows that the optimum temperature for rapid *P. xanthii* germination 
+This plot shows that the optimum temperature for rapid *P. xanthii* germination 
 is around 28$^\circ$C. 
 Also, in the first plot, if we assume at time zero there was no germinated conidia, 
 50% of the conidia germinated within the first 12 hours. 
@@ -289,7 +289,7 @@ temperature ranges 20 - 24C.
 
 <br>  
   
-Lets compare the models three and four to against each other.
+Lets compare models three and four.
 
 ```{r comp_m3m4}
 anova(m3,m4, test = "Chisq")
@@ -304,7 +304,7 @@ in attempt to get a better fit to the raw data.
 
 ```{r model_5}
 m5 <- gam(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k=3) + s(Tm, k =6, bs = "ps"),
-          data = g_tm[Tm != 8 & Tm != 35,],
+          data = g_tm[Tm != 35,],
           family = "binomial")
 summary(m5)
 plot(m5)
@@ -337,6 +337,48 @@ of `r round(summary(m5)$r.sq, 4)`.
 Temperature and infection period are significant predictors and the model produces
 a low UBRE score or `r round(m5$gcv.ubre,3)`, indicating good predictive ability
 and less affected by drop one, tests.
+
+<br>  
+
+### Visualise model against the raw data  
+
+To simulate data from the model using `predict` we need to provide some values which
+to estimate over.  
+
+```{r}
+# Make a data.frame of test values to feed in the model
+test_dat <- data.table(Tm = rep(seq(from = 5, to = 40, by = 0.1), 4), # between 5 and 8 degrees for each incubation period
+                        i_period = rep(c(12,24,36,48), each = length(seq(from = 5, to = 40, by = 0.1))))
+
+# create a data.frame with predicted values and reference them to the respective temperature
+m5_pred_list <-
+   predict(m5,
+           test_dat,
+           type = "response",
+           se.fit = TRUE)
+m5_pred <- data.table(Tm = test_dat$Tm,
+                      i_period = as.factor(test_dat$i_period),
+                      germinated = m5_pred_list$fit,
+                      germ_se = m5_pred_list$se.fit,
+                      CI_low = m5_pred_list$fit + (m5_pred_list$se.fit * -1.94),
+                      CI_high = m5_pred_list$fit + (m5_pred_list$se.fit * 1.94))
+
+m5_pred |>
+   ggplot(aes(x = Tm, y = germinated, colour = i_period))+
+   geom_line(size = 1)+
+   scale_color_grey(start = 0.7,end = 0)+
+   theme_bw()+
+   geom_line(aes(x = Tm, y = CI_low), linetype = "dashed", size = 0.6)+
+   geom_line(aes(x = Tm, y = CI_high), linetype = "dashed", size = 0.6)
+
+
+m5_pred[Tm >= 25 &
+           Tm<= 28 &
+           i_period == 36]
+
+```
+
+
 
 ***  
 
