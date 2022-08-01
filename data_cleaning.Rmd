@@ -104,7 +104,7 @@ setcolorder(germ_tm,
 ```
 
 While not recorded in the raw data, no germination was observed at temperatures
-8C or 35C. 
+8$^\circ$C or 35$^\circ$C. 
 This is important to include for the data analysis.  
 
 ```{r}
@@ -145,9 +145,10 @@ fwrite(x = germ_tm[order(Tm,i_period, leaf),],
 
 ***  
 
-### Effect of temperature on branching  
+### Effect of temperature on germtube development  
 
-We will do the same for data collected on the influence of temperature on the number of conidia which advanced past germination to branch and possibly develop infection structures.  
+Now to import and clean data observing the number of germtubes at different temperature 
+treatments.  
 
 ```{r tm_branch}
 # read in data from sas file
@@ -178,7 +179,7 @@ br_tm <- rbind(br_tm,zero_branch)[, conidia := round(conidia)]
 ```
 
 While not recorded in the raw data, no germination was observed at temperatures
-8C or 35C. 
+8$^\circ$C or 35$^\circ$C. 
 This is important to include for the data analysis.  
 
 ```{r}
@@ -282,7 +283,7 @@ fwrite(germ_vpd,
 Read in the raw data.  
 
 ```{r}
-# File not found 
+# Read in raw data 
 br_vpd <-
   fread("data/220308_branching_vpd_temperature.csv",nrows = 29,header = TRUE)
 ```
@@ -446,7 +447,7 @@ fwrite(x = br_vpd2,
 ```
 
 
-### More data on germtube branching under different vpd  
+### More data on germtube development at a range of VPD  
 
 ```{r clean_br_vpd3}
 # read in data from sas file
