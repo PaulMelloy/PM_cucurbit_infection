@@ -127,10 +127,7 @@ g_tm[Tm != 8 &
 Now lets plot germination over temperature separating by infection period.  
 
 ```{r plot_raw_Tm}
-g_tm[Tm == 8 |
-        Tm == 35, germ_conidia := rbinom(32,1,0.5)]
-Figure_2a <- 
-   g_tm |>
+g_tm |>
    ggplot(aes(x = Tm, y = germ_conidia, colour = as.factor(i_period))) + 
    geom_point()+
    geom_smooth(method = "gam",formula = y ~ s(x, k = 8), alpha = 0.2)+
@@ -143,9 +140,6 @@ Figure_2a <-
    scale_y_continuous(limits = c(0,100), n.breaks = 5)+
    annotate("text", x = 8, y = 100, label = "(a)")
 
-# Save figure
-
-Figure_2a
 ```
 
 
@@ -182,15 +176,13 @@ Germination is a binomial response so we need to provide the number of germinate
 to the number of non-germinated.
 In the first model we will fit a smooth spline to each predictor and specify that each 
 predictor influences germination independently of the other. 
-I have excluded temperature treatments 8$^\circ$C and 35$^\circ$C because the zero germination
-and zero variation can cause issues. 
-Instead we will clearly state there is no germination outside this temperature range.
+
 I have used only 2 and 4 basis spline 'knots' for infection period and temperature
 respectively.  
 
 ```{r model_1}
 m1 <- gam(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k=3) + s(Tm, k =4), 
-          data = g_tm[Tm != 8 & Tm != 35,],
+          data = g_tm,
           family = "binomial")
 summary(m1)
 plot(m1)
@@ -202,11 +194,11 @@ vis.gam(m1,
 ```
 <br>  
 Model two we will investigate whether there is an interaction between temperature 
-and infection period.  
+and infection period using a tensor.  
 
 ```{r model_2}
 m2 <- gam(cbind(germ_conidia, non_germ_conidia) ~ te(i_period, Tm, k = 4),
-          data = g_tm[Tm != 8 & Tm != 35,],
+          data = g_tm,
           family = "binomial")
 summary(m2)
 plot(m2)
@@ -229,8 +221,10 @@ This confirms that model two is the better model and explains more of the devian
 
 <br>  
 
-Yet this model does not tend to reflect the raw data. 
-The plots of the fitted model indicate that 28C showed the highest colonial germination. 
+Yet lets see if we can fit a better model to represent the raw data does not use 
+an interaction to be sure this is the best fit. 
+The plots of the fitted model indicate that 28$^\circ$C showed the highest conidial
+germination. 
 This might be due to the default type of basis splines, and number of knots. 
 We have exhausted our options for improving the interaction, so let us investigate
 improving the additive model by fitting a better spline to the temperature predictor.  
@@ -241,7 +235,7 @@ Lets try p-splines to see if we can improve the fit.
 
 ```{r model_3}
 m3 <- gam(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k=3) + s(Tm, k =4, bs = "ps"),
-          data = g_tm[Tm != 8 & Tm != 35,],
+          data = g_tm,
           family = "binomial")
 summary(m3)
 plot(m3)
@@ -251,9 +245,10 @@ vis.gam(m3,
         n.grid = max(g_tm$Tm) - min(g_tm$Tm) # grid cells
         )
 ```
-The P-splines have improved the predictive ability of the model with a lower UBRE, 
-improved the R squared value and explained deviance.
-We can also see that the curve has been shifted slightly up towards 28C.  
+The P-splines have not improved the predictive ability of the model with a lower 
+UBRE compared with model 2, improved the R squared value and explained deviance.
+m3 however is a better model compared to m1 , 
+We can also see that the curve has been shifted slightly up towards 28$^\circ$C.  
 
 
 Lets compare the models two and three to against each other.
@@ -271,7 +266,7 @@ Next lets see if cyclic versions of the p-splines `"cp"` improve this fit furthe
 
 ```{r model_4}
 m4 <- gam(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k=3) + s(Tm, k =4, bs = "cp"),
-          data = g_tm[Tm != 8 & Tm != 35,],
+          data = g_tm,
           family = "binomial")
 summary(m4)
 plot(m4)
@@ -281,21 +276,19 @@ vis.gam(m4,
         n.grid = max(g_tm$Tm) - min(g_tm$Tm) # grid cells
         )
 ```
-The cyclic P-splines seem to have improved the predictive ability of the model 
-with a very low UBRE, also improving the R squared value and explaining more deviance.
-We can also see that the curve has been shifted further towards 28C, however the
-the willingness of the model implies it might be over-fit, especially between the 
-temperature ranges 20 - 24C.  
+While not an improvement on `m2`, the cyclic P-splines seem to have a very good 
+predictive ability with a very low UBRE, also a high R squared value and explaining 
+a large amount of deviance.
+We can also see that the curve has been shifted further towards 28$^\circ$C.  
 
 <br>  
   
 Lets compare models three and four.
 
 ```{r comp_m3m4}
+anova(m2,m4, test = "Chisq")
 anova(m3,m4, test = "Chisq")
 ```
-The models show no significant difference, therefore we should keep the simpler 
-model.  
 
 <br>  
 
@@ -303,27 +296,33 @@ Lets use the p splines again however increase the number of knots for temperatur
 in attempt to get a better fit to the raw data.
 
 ```{r model_5}
-m5 <- gam(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k=3) + s(Tm, k =6, bs = "ps"),
-          data = g_tm[Tm != 35,],
+m5 <- gam(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k=3) + s(Tm, k =6, bs = "cs"),
+          data = g_tm,
           family = "binomial")
 summary(m5)
 plot(m5)
+plot(m5,ylim = c(-3,4))
+abline(v=28)
 vis.gam(m5,
         theta = -50, # horizontal rotation
         phi = 30, # vertical rotation
         n.grid = max(g_tm$Tm) - min(g_tm$Tm) # grid cells
         )
 ```
-This model has less "wiggliness", higher R-squared, explained more deviance and 
-has the lowest UBRE score.  
+This model plot looks contrived, however if we focus the plot and ignore large negative 
+standardised values created by zero observations at 8 and 35$^\circ$, the curve 
+seems to reflect the raw data very well. 
+This model also shows the highest R-squared, explained more deviance and 
+has the lowest UBRE score, compared to all other models.  
 
 
-Lets compare the models four and five to against each other.  
+Lets compare the models two and five, then four and five to against each other.  
 
 ```{r comp_m4m5}
+anova(m2,m5, test = "Chisq")
 anova(m4,m5, test = "Chisq")
 ```
-The p-spline model with more knots explained the most deviance and provides a 
+The cyclic p-spline model with more knots explained the most deviance and provides a 
 significantly better fit.
 
 And look at the AIC values of all the models.
@@ -347,8 +346,8 @@ to estimate over.
 
 ```{r}
 # Make a data.frame of test values to feed in the model
-test_dat <- data.table(Tm = rep(seq(from = 5, to = 40, by = 0.1), 4), # between 5 and 8 degrees for each incubation period
-                        i_period = rep(c(12,24,36,48), each = length(seq(from = 5, to = 40, by = 0.1))))
+test_dat <- data.table(Tm = rep(seq(from = 0, to = 40, by = 0.1), 4), # between 5 and 8 degrees for each incubation period
+                        i_period = rep(c(12,24,36,48), each = length(seq(from = 0, to = 40, by = 0.1))))
 
 # create a data.frame with predicted values and reference them to the respective temperature
 m5_pred_list <-
@@ -363,21 +362,35 @@ m5_pred <- data.table(Tm = test_dat$Tm,
                       CI_low = m5_pred_list$fit + (m5_pred_list$se.fit * -1.94),
                       CI_high = m5_pred_list$fit + (m5_pred_list$se.fit * 1.94))
 
-m5_pred |>
+Figure_2a <- 
+   m5_pred |>
    ggplot(aes(x = Tm, y = germinated, colour = i_period))+
    geom_line(size = 1)+
-   scale_color_grey(start = 0.7,end = 0)+
+   scale_color_grey(start = 0.75,end = 0)+
+   geom_point(data = g_tm, aes(x = Tm, y = (germ_conidia/100), colour = as.factor(i_period)))+
    theme_bw()+
    geom_line(aes(x = Tm, y = CI_low), linetype = "dashed", size = 0.6)+
-   geom_line(aes(x = Tm, y = CI_high), linetype = "dashed", size = 0.6)
+   geom_line(aes(x = Tm, y = CI_high), linetype = "dashed", size = 0.6)+
+   xlab(expression("Temperature " ( degree*C)))+
+   ylab("Germinated conidia (%)")+
+   labs(colour = "Time (h)")
 
 
-m5_pred[Tm >= 25 &
-           Tm<= 28 &
-           i_period == 36]
-
+Figure_2a
 ```
 
+```{r saveFig2a, eval=FALSE, include=FALSE}
+# Save table as a word document
+ggsave(
+   filename = "FiguresTables/Fig2a_TemperatureGermination.tiff",
+   plot = Figure_2a,
+   device = "tiff",
+   height = 6,
+   width = 7,
+   dpi = 300,
+   units = "in"
+)
+```
 
 
 ***  
@@ -432,7 +445,8 @@ br_tm[, list(Mean = mean(conidia),
 
 
 Let's plot the number of germ tubes for each temperature treatment. 
-We can use stacked bars to show not only the number of germ tubes.  
+We can use stacked bars to show not only the number of germ tubes, but the fact that
+a germinated conidia with three germtubes, also has two germ tubes ect.  
 
 ```{r plot_raw_br}
 Figure_2b <-
