@@ -722,3 +722,6 @@ probs_boot_df %>%
 
 ```
 
+```{r sessionInfo}
+sessionInfo()
+```
