@@ -446,7 +446,7 @@ br_tm[, list(Mean = mean(conidia),
 
 Let's plot the number of germ tubes for each temperature treatment. 
 We can use stacked bars to show not only the number of germ tubes, but the fact that
-a germinated conidia with three germtubes, also has two germ tubes ect.  
+a germinated conidia with three germ tubes, also has two germ tubes ect.  
 
 ```{r plot_raw_br}
 Figure_2b <-
@@ -530,7 +530,7 @@ which leads us to use an ordinal logistic regression.
 First we need to convert the count data into a longer format, so each row represents
 an observation.  
 
-```{r to_long}
+```{r classify}
 br_tm_lng <-
    rbindlist(apply(br_tm, 1 , function(x) {
       rbindlist(lapply(seq_len(x["conidia"]), function(x2) {
@@ -551,7 +551,7 @@ additive relationship between germ tube number and temperature and leaf rep.
 
 ```{r m1}
 m1 <- polr(germtubes ~ Tm + rep, 
-           data = br_tm_lng, 
+           data = br_tm_lng,
            Hess = TRUE)
 
 summary(m1)
@@ -568,8 +568,8 @@ to determine if the result is reasonable compared to the raw data.
 
 ```{r plot_m1}
 # Make a data.frame of test values to feed in the model
-test_dat <- data.table(Tm = seq(from = 5, to = 40, by = 0.1), # between 5 and 8 degrees
-                       rep = as.factor(rbinom(length(seq(from = 5, to = 40, by = 0.1)),1,0.5)+1)) # randomly use either the first or second rep
+test_dat <- data.frame(Tm = seq(from = 5, to = 36, by = 0.1), # between 5 and 8 degrees
+                       rep = as.factor(rbinom(length(seq(from = 5, to = 36, by = 0.1)),1,0.5)+1)) # randomly use either the first or second rep
 
 # create a data.frame with predicted values and reference them to the respective temperature
 m1_pred <-
@@ -595,19 +595,24 @@ m1_pred |>
    theme_minimal()
 ```
 
-The result is rather linear and predicts more germtubes at 40C when the raw data does not see any from 35C or presumably above.
+The result is rather linear and predicts more germ tubes at 40$^\circ$C when the raw data does not see any from 35C or presumably above.
 
 #### Model 2 - Temperature effect on germ-tube production  
 
 Lets try applying some splines to temperature and dropping rep.  
 
+We need to read in the `splines` package to fit splines as they are not supported 
+in the `polr()` function.  
+
 ```{r m2}
 library(splines)
-m2 <- polr(germtubes ~ bs(Tm,Boundary.knots = c(8,35)), 
-                         data = br_tm_lng, Hess = TRUE)
+m2 <- polr(germtubes ~ bs(Tm, Boundary.knots = c(8,35)),
+           data = br_tm_lng, 
+           Hess = TRUE)
+
 summary(m2)
 ```
-The residual deviance and AIC on this model is lower, indicating this might be a 
+The residual deviance and AIC on this model is much lower, indicating this might be a 
 better fit. 
 Also the t value is higher hinting this model shows clearer differences between 
 the variables, especially in the middle of the studied temperature range.  
@@ -654,9 +659,9 @@ Lets see if we can improve the model by changing the number and placement of the
 spline knots.  
 
 ```{r m3}
-m3 <- polr(germtubes ~ bs(Tm,
-                         knots = c(19,23,27,30)), 
-                         data = br_tm_lng, Hess = TRUE)
+m3 <- polr(germtubes ~ bs(Tm, knots = c(19,23,27,30)), 
+           data = br_tm_lng,
+           Hess = TRUE)
 summary(m3)
 ```
 The residual deviance and AIC on this model is lower, indicating this might be a 
@@ -668,7 +673,7 @@ Now lets try predicting from this model.
 
 ```{r pred_m3}
 m3_pred <- as.data.table(round(predict(m3,
-                         test_dat[,1],
+                         test_dat,
                          type = "p"),
                  3))[, Tm := test_dat$Tm]
 
@@ -709,23 +714,28 @@ informs us it is not by much.
 Based on the plot of model 3, we will try another model with fewer knots to reduce 
 the wiggliness.  
 
+
 ```{r m4}
-m4 <- polr(germtubes ~ bs(Tm,
-                         knots = c(23,28)
-                         ), 
-                         data = br_tm_lng, Hess = TRUE)
+m4 <- polr(germtubes ~ bs(Tm, knots = c(23,28)), 
+           data = br_tm_lng, 
+           Hess = TRUE)
 summary(m4)
 ```
-The residual deviance and AIC on this model is lower, indicating this might be a 
-better fit. 
+The residual deviance and AIC on this model is higher than the overfit model `m3`,
+however lower than the under fit model `m2` indicating this model would better reflect 
+the raw data. 
 Also the t value is higher hinting this model shows clearer differences between 
 the variables.  
 
-Now lets try predicting from this model, we will use the .  
+Now lets try predicting from this model, we will use the `marginaleffects` package
+so we can extract standard errors.  
 
 ```{r pred_m4}
+test_dat <- data.table(Tm = seq(from = 10,
+                                to = 35,
+                                by = 0.1))
 m4_pred <- marginaleffects::predictions(m4,
-                                        newdata = test_dat[,1],
+                                        newdata = test_dat,
                                         type = "probs")
 # set data.table format
 setDT(m4_pred)
@@ -746,7 +756,7 @@ This is ok as we know there should be a zero probability of spore germination ou
 this temperature range of 8$^\circ$C and 35$^\circ$C
 
 ```{r plot_m4}
-# format to long 
+# raw data overlay
 Figure_3b <- 
    m4_pred |>
    ggplot(aes(Tm, predicted *100, colour = germtubes))+
@@ -755,22 +765,22 @@ Figure_3b <-
                                  ), linetype = "dotted", size = 0.7)+
    geom_line(data = m4_pred, aes(x = Tm, y = CI_high*100, #colour = germtubes,
                                  ), linetype = "dotted", size = 0.7)+
-   theme_minimal()+
-   scale_colour_viridis_d(direction = -1)+
+   scale_color_grey(start = 0.75,end = 0)+
+   theme_bw()+
    xlab(expression("Temperature " ( degree*C)))+
    ylab("Percentage (%)")+
-   labs(colour = "Germ tubes")+
-   geom_vline(aes(xintercept = 28), linetype = 2)+
-   annotate(geom = "text",
-            x = 29,
-            y = 98,
-            label = 28)+
-   annotate(geom = "text",
-            x = 6,
-            y = 96,
-            label = "(b)",size = 5)
+   labs(colour = "Germ tubes")
+   #geom_vline(aes(xintercept = 28), linetype = 2)+
+   # annotate(geom = "text",
+   #          x = 29,
+   #          y = 98,
+   #          label = 28)+
+   # annotate(geom = "text",
+   #          x = 6,
+   #          y = 96,
+   #          label = "(b)",size = 5)
 Figure_3b
-[```
+```
 
 ```{r saveFig3b, eval=FALSE, include=FALSE}
 # Save table as a word document
