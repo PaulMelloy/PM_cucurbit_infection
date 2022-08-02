@@ -16,6 +16,10 @@ output:
       toc_float: true 
 ---
 
+<style>
+body {
+text-align: justify}
+</style>
 
 ## Compendium sections  
 
@@ -142,19 +146,6 @@ g_tm |>
 
 ```
 
-
-```{r saveFig2a, eval=FALSE, include=FALSE}
-# Save table as a word document
-ggsave(
-   filename = "FiguresTables/Fig2a_TemperatureGermination.tiff",
-   plot = Figure_2a,
-   device = "tiff",
-   height = 6,
-   width = 7,
-   dpi = 300,
-   units = "in"
-)
-```
 
 This plot shows that the optimum temperature for rapid *P. xanthii* germination 
 is around 28$^\circ$C. 
@@ -877,4 +868,7 @@ due to temperatures in this range.
 
 $\frac{t}{13.3}I(0<=t<13.3)+\frac{38.83333-t}{38.83333-13.3}I(13.3<=t<38.83333)$
 
+```{r sessionInfo}
+sessionInfo()
+```
 
