@@ -429,7 +429,11 @@ Figure_5 <-
                y = percent ,
                fill = as.factor(germtubes))) + 
    geom_col()+
-   scale_fill_brewer(palette = "Blues", name = "Germ tubes")+
+   scale_fill_manual(values = c("0" = "grey90",
+                                "1" = "grey70",
+                                "2" = "grey55",
+                                "3" = "grey40"),
+                     name = "Germ tubes")+
    xlab("Vapour pressure deficit (kPa)")+
    ylab("Percent germinated (%)")+
    labs(colour = "Germ tubes")+
@@ -456,8 +460,7 @@ ggsave(
 
 
 ### Analysis of conidial germination and germtube proliferation
-In order to analyse the data we need to convert the data to a longer format, where
-each row represents an observation.
+In order to analyse the data we need to set the data classes.
 
 ```{r model_1}
 b_v[, c("exp",
@@ -472,7 +475,7 @@ b_v[, c("exp",
 
 ```
 
-Test change
+First we start with a simple additive model with no interaction or smooths.   
 
 ```{r}
 m1 <- polr(germtubes ~ vpd + Tm + exp, 
@@ -543,7 +546,7 @@ m1_pred[,.(prob = mean(prob)),by= .(vpd,germtubes)] |>
 
 <br>  
 Model one tells us a bit about the influence of the VPD and temperature variables
-but the model in the graph above does not fit our data very well.
+but the model in the graph above does look like it will fit our data very well.
 Model two we will try fit the model to our observations by using a basis spline on
 our VPD variable.  
 
@@ -652,73 +655,3 @@ coef_table <- data.table(coef(summary(m2)), keep.rownames = TRUE)
 coef_table[, p_value := pnorm(abs(`t value`),lower.tail = FALSE) *2][, sig := p_star(p_value)]
 coef_table
 ```
-
-```{r}
-# Packages
-library(MASS)
-library(marginaleffects)
-library(dplyr)
-
-# Create a test set
-N <- 4
-test_dat <- data.frame(
-  Infl = factor(rep("Low", N)),
-  Type = unique(housing$Type),
-  Cont = factor(rep("Low", N))
-)
-
-# Fit ordered logistic regression model
-house.plr <- polr(Sat ~ Infl + Type + Cont, 
-                  weights = Freq, 
-                  data = housing,
-                  Hess = TRUE)
-
-# Demonstrate that predict() doesn't provide any measure of variability
-# for the predicted class probabilities, as shown in question
-predict(house.plr, test_dat, type = "probs")
-
-# Use the marginaleffects package to get delta method standard errors for
-# each predicted probability
-probs <- marginaleffects::predictions(house.plr, 
-                                      newdata = test_dat,
-                                      type = "probs")
-
-# Compute CIs from the standard error using normal approximation
-probs$predicted - 1.96*probs$std.error
-probs$predicted + 1.96*probs$std.error
-
-# Alternatively, use non-parametric bootstrapped confidence intervals.
-# note that this does not adjust the weights to a constant sum for
-# each bootstrap, although it is easy to implement. You're free to
-# determine how to handle the weights, including re-sampling based 
-# on the weights.
-
-# Generate bootstrapped data.frames
-set.seed(123)
-sims <- 5
-samples <- vector(mode = "list", length = sims)
-samples <- lapply(samples, function(x){ slice_sample(housing, n = nrow(housing), replace = TRUE)})
-
-# Fit model on each bootstrapped data.frame
-models <- lapply(samples, function(x){polr(Sat ~ Infl + Type + Cont, 
-                                           weights = Freq, 
-                                           data = x,
-                                           Hess = TRUE)})
-
-# Get test predictions into a data.frame
-probs_boot <- lapply(models, function(x) {
-  marginaleffects::predictions(x,
-                               newdata = test_dat,
-                               type = "probs")
-})
-
-probs_boot_df <- bind_rows(probs_boot)
-
-# Compute CIs
-probs_boot_df %>% 
-  group_by(group, Type.x, Infl, Type.y, Cont) %>%
-  summarise(ci_low = quantile(predicted, probs = 0.025),
-            ci_high = quantile(predicted, probs = 0.975))
-
-```
-
