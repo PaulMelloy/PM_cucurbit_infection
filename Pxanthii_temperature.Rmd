@@ -143,19 +143,6 @@ g_tm |>
 ```
 
 
-```{r saveFig2a, eval=FALSE, include=FALSE}
-# Save table as a word document
-ggsave(
-   filename = "FiguresTables/Fig2a_TemperatureGermination.tiff",
-   plot = Figure_2a,
-   device = "tiff",
-   height = 6,
-   width = 7,
-   dpi = 300,
-   units = "in"
-)
-```
-
 This plot shows that the optimum temperature for rapid *P. xanthii* germination 
 is around 28$^\circ$C. 
 Also, in the first plot, if we assume at time zero there was no germinated conidia, 
@@ -451,7 +438,8 @@ a germinated conidia with three germtubes, also has two germ tubes ect.
 ```{r plot_raw_br}
 Figure_2b <-
    br_tm |>
-   ggplot(aes( x = as.factor(Tm), y = conidia/2 , fill = factor(germtubes,levels = c(1,2,3,0)))) + 
+   ggplot(aes(x = as.factor(Tm), y = conidia/2 , 
+              fill = factor(germtubes,levels = c(1,2,3,0)))) + 
    geom_col(position = position_stack(reverse = TRUE))+
    scale_fill_manual(values = c("0" = "grey90",
                                 "1" = "grey70",
@@ -467,7 +455,7 @@ Figure_2b <-
 Figure_2b   
 ```
 
-```{r saveFig2b, eval=FALSE, include=FALSE}
+```{r saveFig2b, eval=TRUE, include=FALSE}
 # Save table as a word document
 ggsave(
    filename = "FiguresTables/Fig2b_TemperatureGermtube.tiff",
@@ -770,7 +758,7 @@ Figure_3b <-
             y = 96,
             label = "(b)",size = 5)
 Figure_3b
-[```
+```
 
 ```{r saveFig3b, eval=FALSE, include=FALSE}
 # Save table as a word document
