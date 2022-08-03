@@ -107,10 +107,11 @@ Figure_4 <-
   g_vpd |>
    ggplot(aes(x = vpd, y = germ_n,colour = factor(Tm))) + 
    geom_point()+
+   theme_bw()+
+   scale_color_grey(start = 0.75,end = 0)+
    geom_smooth(method = "gam",
                formula = y ~ bs(x,k=0.2),
                size = 0.7,se = FALSE)+
-   scale_color_viridis_d()+
    facet_wrap(facets = c("i_period"), 
               labeller = labeller(i_period = i_p_labs))+
    xlab("Vapour pressure deficit (kPa)")+
@@ -121,20 +122,6 @@ Figure_4 <-
 Figure_4
 ```
 
-
-
-```{r saveFig4, eval=FALSE, include=FALSE}
-# Save table as a word document
-ggsave(
-   filename = "FiguresTables/Fig4_VPDGermination.tiff",
-   plot = Figure_4,
-   device = "tiff",
-   height = 6,
-   width = 7,
-   dpi = 300,
-   units = "in"
-)
-```
 
 Let's look at the same data in terms of VPD split by temperature. 
 
@@ -257,6 +244,7 @@ m5v <- gam(cbind(germ_n,non_germ_n) ~ te(vpd,Tm, k = 3)+ s(i_period,k=3),
            data = g_vpd,
            family = "binomial")
 summary(m5v)
+plot(m5v)
 anova(m4v,m5v)
 ```
 This comparison shows while the interaction between temperature is significant,
@@ -335,6 +323,71 @@ vis.gam(m6v,
 
 par(mfrow = c(1,1))
 ```
+
+### Visualise model against the raw data  
+
+To simulate data from the model using `predict` we need to provide some values which
+to estimate over.  
+
+```{r}
+# Make a data.frame of test values to feed in the model
+test_vpd <- rep(seq(from = 0, to = max(g_vpd$vpd), by = 0.01), 3*4)
+test_dat <- data.table(vpd = test_vpd, # between 5 and 8 degrees for each incubation period
+                       Tm = rep(unique(g_vpd$Tm), 
+                                each = length(test_vpd),
+                                times = 4),
+                       i_period = rep(c(12,24,36,48), each = length(test_vpd)*3))
+
+# create a data.frame with predicted values and reference them to the respective temperature
+m6_pred_list <-
+   predict(m6v,
+           test_dat,
+           type = "response",
+           se.fit = TRUE)
+m6_pred <- data.table(vpd = test_dat$vpd,
+                      Tm = as.factor(test_dat$Tm),
+                      i_period = as.factor(test_dat$i_period),
+                      germinated = m6_pred_list$fit,
+                      germ_se = m6_pred_list$se.fit,
+                      CI_low = m6_pred_list$fit + (m6_pred_list$se.fit * -1.94),
+                      CI_high = m6_pred_list$fit + (m6_pred_list$se.fit * 1.94))
+
+Figure_4 <- 
+   m6_pred |>
+   ggplot(aes(x = vpd, y = germinated*100, colour = i_period))+
+   facet_wrap(facets = c("Tm"))+
+              #labeller = labeller(i_period = i_p_labs))+
+   geom_line(size = 0.8)+
+   scale_color_grey(start = 0.75,end = 0)+
+   theme_bw()+
+   geom_line(aes(x = vpd, y = CI_low*100), linetype = "dashed", size = 0.6)+
+   geom_line(aes(x = vpd, y = CI_high*100), linetype = "dashed", size = 0.6)+
+   xlab("Vapour pressure deficit (kPa)")+
+   ylab("Germinated conidia (%)")+
+   labs(colour = "Incubation\nperiod (hours)")+
+   geom_point(data = g_vpd, 
+              aes(x = vpd, y = (germ_n), 
+                  colour = as.factor(i_period)))+
+   theme(strip.background = element_rect(fill = "white"))
+
+Figure_4
+```
+
+
+
+```{r saveFig4, eval=FALSE, include=FALSE}
+# Save table as a word document
+ggsave(
+   filename = "FiguresTables/Fig4_VPDGermination.tiff",
+   plot = Figure_4,
+   device = "tiff",
+   height = 6,
+   width = 7,
+   dpi = 300,
+   units = "in"
+)
+```
+
 
 ***  
 
@@ -438,10 +491,11 @@ Figure_5 <-
    ylab("Percent germinated (%)")+
    labs(colour = "Germ tubes")+
    theme_classic()+
+   scale_fill_grey(start = 0.95,end = 0.25)+
    theme(axis.text.x = element_text(angle = 70, vjust = 1.7, hjust = 2))+
    geom_text(aes(x = as.factor(vpd), y = 105, label = paste0(Tm,"°C")),size = 2.5)+
-   scale_y_continuous(limits = c(0,110), breaks = c(0,25,50,75,100))+
-   annotate("text", x = 1, y = 110, label = "(a)", size =5)
+   scale_y_continuous(limits = c(0,111), breaks = c(0,25,50,75,100))+
+   annotate("text", x = 1, y = 111, label = "(a)", size =5)
 Figure_5
 ```
 
