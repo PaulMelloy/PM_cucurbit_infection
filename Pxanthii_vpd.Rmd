@@ -445,7 +445,7 @@ Figure_5 <-
 Figure_5
 ```
 
-```{r saveFig5, eval=FALSE, include=FALSE}
+```{r saveFig5, eval=TRUE, include=FALSE}
 # Save table as a word document
 ggsave(
    filename = "FiguresTables/Fig5_VPDGermtube.tiff",
@@ -630,7 +630,7 @@ Figure_5b <-
 Figure_5b
 ```
 
-```{r saveFig5b, eval=FALSE, include=FALSE}
+```{r saveFig5b, eval=TRUE, include=TRUE}
 # Save table as a word document
 ggsave(
    filename = "FiguresTables/Fig5b_VPDGermtubeMod.tiff",
