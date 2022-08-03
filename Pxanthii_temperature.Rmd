@@ -442,7 +442,8 @@ a germinated conidia with three germ tubes, also has two germ tubes ect.
 ```{r plot_raw_br}
 Figure_3a <-
    br_tm |>
-   ggplot(aes( x = as.factor(Tm), y = conidia/2 , fill = factor(germtubes,levels = c(1,2,3,0)))) + 
+   ggplot(aes(x = as.factor(Tm), y = conidia/2 , 
+              fill = factor(germtubes,levels = c(1,2,3,0)))) + 
    geom_col(position = position_stack(reverse = TRUE))+
    scale_fill_manual(values = c("0" = "grey90",
                                 "1" = "grey70",
@@ -458,7 +459,7 @@ Figure_3a <-
 Figure_3a   
 ```
 
-```{r saveFig2b, eval=FALSE, include=FALSE}
+```{r saveFig2b, eval=TRUE, include=FALSE}
 # Save table as a word document
 ggsave(
    filename = "FiguresTables/Fig2b_TemperatureGermtube.tiff",
