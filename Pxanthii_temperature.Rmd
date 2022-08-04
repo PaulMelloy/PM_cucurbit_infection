@@ -292,8 +292,6 @@ m5 <- gam(cbind(germ_conidia, non_germ_conidia) ~ s(i_period, k=3) + s(Tm, k =6,
           family = "binomial")
 summary(m5)
 plot(m5)
-plot(m5,ylim = c(-3,4))
-abline(v=28)
 vis.gam(m5,
         theta = -50, # horizontal rotation
         phi = 30, # vertical rotation
@@ -302,7 +300,14 @@ vis.gam(m5,
 ```
 This model plot looks contrived, however if we focus the plot and ignore large negative 
 standardised values created by zero observations at 8 and 35$^\circ$, the curve 
-seems to reflect the raw data very well. 
+seems to reflect the raw data very well.  
+
+```{r}
+plot(m5,ylim = c(-3,4))
+abline(v=28)
+```
+
+
 This model also shows the highest R-squared, explained more deviance and 
 has the lowest UBRE score, compared to all other models.  
 
