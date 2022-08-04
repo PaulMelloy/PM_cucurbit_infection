@@ -540,8 +540,10 @@ n_dat <-
 t(n_dat)
 ```
 
-
-
+R session info
+```{r sessionInfo}
+sessionInfo()
+```
 
 
 
