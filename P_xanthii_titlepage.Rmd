@@ -7,6 +7,7 @@ author:
   - name: Paul Melloy 
     url: https://paulmelloy.github.io/
     affiliation: The University of Queensland
+    affiliation_url: https://researchers.uq.edu.au/researcher/37467
 date: "`r Sys.Date()`"
 output: distill::distill_article
 ---
