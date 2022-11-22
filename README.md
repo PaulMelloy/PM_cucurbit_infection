@@ -13,8 +13,8 @@ A knitted version of this repository can be found at the following links:
    
 ## Pre-print availability
 A copy of the pre-print and this repository is available here:  
- > https://doi.org/10.5281/zenodo.7349124 
- [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7349124.svg)](https://doi.org/10.5281/zenodo.7349124)
+ >  [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7349124.svg)](https://doi.org/10.5281/zenodo.7349124) https://doi.org/10.5281/zenodo.7349124 
+
 
 ## Attributions  
 ### Authors  
