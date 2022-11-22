@@ -765,7 +765,7 @@ Figure_3b <-
    scale_color_grey(start = 0.75,end = 0)+
    theme_bw()+
    xlab(expression("Temperature " ( degree*C)))+
-   ylab("Percentage (%)")+
+   ylab("Germ tube production (%)")+
    labs(colour = "Germ tubes")+
    annotate(geom = "text",
             x = 6,
