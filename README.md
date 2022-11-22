@@ -19,11 +19,11 @@ A copy of the pre-print and this repository is available here:
 ## Attributions  
 ### Authors  
 
-   1. Dr. Zaiton Sapak$^{1,2}$  
-   2. Dr. Paul Melloy$^{2}$  
-   3. E.J. Minchinton$^{3}$  
-   4. Dr. Moin Salam$^{4}$  
-   5. Prof. Victor Galea$^{2}$  
+   1. Dr. Zaiton Sapak<sup>1,2</sup>  
+   2. Dr. Paul Melloy<sup>2</sup>  
+   3. E.J. Minchinton<sup>3</sup>  
+   4. Dr. Moin Salam<sup>4</sup>  
+   5. Prof. Victor Galea<sup>2</sup>  
    
 ### Author institutions  
 
