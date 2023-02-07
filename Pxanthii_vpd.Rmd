@@ -483,15 +483,14 @@ Figure_5 <-
                fill = as.factor(germtubes))) + 
    geom_col()+
    scale_fill_manual(values = c("0" = "grey90",
-                                "1" = "grey70",
-                                "2" = "grey55",
-                                "3" = "grey40"),
+                                "1" = "grey74",
+                                "2" = "grey52",
+                                "3" = "grey25"),
                      name = "Germ tubes")+
    xlab("Vapour pressure deficit (kPa)")+
    ylab("Percent germinated (%)")+
    labs(colour = "Germ tubes")+
    theme_classic()+
-   scale_fill_grey(start = 0.95,end = 0.25)+
    theme(axis.text.x = element_text(angle = 70, vjust = 1.7, hjust = 2))+
    geom_text(aes(x = as.factor(vpd), y = 105, label = paste0(Tm,"°C")),size = 2.5)+
    scale_y_continuous(limits = c(0,111), breaks = c(0,25,50,75,100))+
